@@ -1,0 +1,383 @@
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+    text-align: center;
+  }
+
+  .logo-wrapper {
+    display: flex;
+    align-items: center;  
+    text-decoration: none; 
+    gap: 10px;
+  }
+  .logo-container {
+    width: 60px; 
+    height: 60px; 
+    border: 2px solid white; 
+    border-radius: 50%; 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden; }
+  
+  .logo-image {
+    width: 100%; 
+    height: auto;
+  }
+ 
+  .navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #0077be;
+    padding: 15px 50px;
+    color: white;
+  }
+  
+  .logo {
+    font-size: 24px;
+    font-weight: bold;
+  }
+
+  .nav-buttons {
+    display: flex;
+    gap: 15px;
+  }
+
+  .getstarted-button{
+    display: flex;
+    gap:15px;
+    justify-content: center;
+    font-weight: bolds;
+  }
+  .cta-button {
+    padding: 10px 15px;
+    background-color: white;
+    color: #0077be;
+    text-decoration: none;
+    font-weight: bold;
+    border-radius: 5px;
+  }
+  
+  
+  .cta-button:hover {
+    background-color: #ddd;
+  }
+  
+
+  .hero {
+    padding: 50px;
+    background-color: #0077be;
+    color: white;
+  }
+  
+  .hero h1 {
+    font-size: 36px;
+  }
+  
+  .hero p {
+    font-size: 18px;
+    margin-top: 10px;
+  }
+  
+  .hero .cta-button {
+    margin-top: 20px;
+  }
+  
+  .features {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 30px; 
+    margin: 30px auto;
+    max-width: 1200px; }
+  
+  .feature {
+    position: relative;
+    background: white;
+    padding: 30px;  
+    border-radius: 5px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    width: 300px;  
+    text-align: center;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .feature:hover {
+    transform: scale(1.05); 
+    box-shadow: 0px 6px 20px rgba(0, 0, 0, 0.2);
+  }
+  
+  .feature img {
+    position: absolute;
+    top: -40px; /* Adjusts the upward position of the image */
+    left: 0;
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    object-position: top; /* Ensures the upward part of the image is visible */
+    border-radius: 5px;
+    transition: transform 0.3s ease;
+  }
+  
+  
+  .feature:hover img {
+    transform: scale(1.1); 
+  }
+  
+  .feature h2 {
+    font-size: 22px;
+    color: #0077be;
+    margin-top: 120px; 
+  }
+  
+  .feature p {
+    font-size: 14px;
+    color: #555;
+  }
+
+  
+
+  .faq-section {
+  padding: 40px 20px;
+  background-color: #f4f4f4;
+  text-align: center;
+  max-width: 100%;
+}
+
+.faq-section h2 {
+  font-size: 28px;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+
+.faq-container {
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+
+.faq-item {
+  background: white;
+  border-radius: 5px;
+  margin-bottom: 10px;
+  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.faq-question {
+  width: 100%;
+  background: #e5e7eb;
+  color: #333;
+  padding: 15px;
+  font-size: 18px;
+  font-weight: bold;
+  text-align: left;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.faq-question:hover {
+  background: #d4d6da;
+}
+
+
+.arrow {
+  transition: transform 0.2s ease-in-out;
+  font-size: 20px;
+}
+
+.arrow-down {
+  transform: rotate(0deg); 
+}
+
+.arrow-up {
+  transform: rotate(180deg);
+}
+
+
+.faq-answer {
+  max-height: 0;
+  overflow: hidden;
+  background: #0077be;
+  color: white;
+  padding: 0 15px;
+  transition: max-height 0.3s ease-in-out, padding 0.3s ease-in-out;
+}
+
+.faq-answer.open {
+  max-height: 150px; 
+  padding: 15px;
+  }
+
+
+/* Footer */
+.footer {
+  background-color: #333;
+  color: white;
+  padding: 50px 20px;
+  margin-top: 40px;
+}
+
+.footer-container {
+  display: flex;
+  justify-content: space-between;
+  max-width: 1200px;
+  margin: 0 auto;
+  align-items: flex-start;
+  flex-wrap: wrap; 
+}
+
+.footer-info {
+  width: 45%;
+  text-align: left;
+}
+
+.footer-info h3 {
+  font-size: 18px;
+  margin-bottom: 10px;
+  color: #00aaff;
+  text-align: left; 
+}
+
+.footer-info p {
+  font-size: 18px;
+  margin: 5px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.footer-info p svg {
+  font-size: 18px;
+  color: #00aaff;
+}
+
+.footer-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.footer-nav a {
+  color: white;
+  text-decoration: none;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.footer-nav a svg {
+  font-size: 18px;
+}
+
+.footer-nav a:hover {
+  text-decoration: underline;
+  color: #00aaff;
+}
+
+.footer-map {
+  width: 45%;
+  text-align: left;
+}
+
+.footer-map h3{
+  color: #00aaff;
+}
+
+.footer-map iframe {
+  width: 100%;
+  height: 300px;
+  border: 0;
+  border-radius: 5px;
+}
+
+.footer p {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 14px;
+}
+
+
+@media (max-width: 1024px) {
+  .footer-container {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .footer-info, .footer-map {
+    width: 90%;
+    margin-bottom: 20px;
+  }
+
+  .footer-info h3, .footer-info p, .footer-nav {
+    text-align: left; 
+  }
+
+  .footer-nav {
+    gap: 10px;
+  }
+
+  .footer-map iframe {
+    height: 250px;
+  }
+}
+
+@media (max-width: 768px) {
+  .footer-info, .footer-map {
+    width: 100%;
+  }
+
+  .footer-info h3 {
+    font-size: 18px; 
+  }
+
+  .footer-info p {
+    font-size: 18px; 
+  }
+
+  .footer-nav a {
+    font-size: 16px; 
+  }
+
+  .footer-map iframe {
+    height: 200px;
+  }
+
+  .footer p {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .footer-info h3 {
+    font-size: 18px; /* Keep font size consistent */
+  }
+
+  .footer-info p {
+    font-size: 18px; /* Keep font size consistent */
+  }
+
+  .footer-nav a {
+    font-size: 16px; /* Keep font size consistent */
+  }
+
+  .footer-map iframe {
+    height: 180px;
+  }
+
+  .footer p {
+    font-size: 12px;
+  }
+}

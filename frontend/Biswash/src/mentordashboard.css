@@ -1,0 +1,32 @@
+.mentor-dashboard-container {
+    padding: 20px;
+    font-family: Arial, sans-serif;
+  }
+  
+  .dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .dashboard-header h1 {
+    margin: 0;
+  }
+  
+  .logout-btn {
+    padding: 10px 20px;
+    background-color: red;
+    color: white;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .mentor-dashboard-content {
+    margin-top: 20px;
+  }
+  
+  .mentor-dashboard-content h2 {
+    font-size: 24px;
+    margin-bottom: 10px;
+  }
+  

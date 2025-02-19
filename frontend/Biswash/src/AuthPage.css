@@ -1,0 +1,96 @@
+
+.auth-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f4f4f4;
+  }
+  
+ 
+  .auth-container {
+    background-color: white;
+    padding: 40px;
+    border-radius: 8px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    width: 400px;
+    max-width: 100%;
+  }
+  
+  
+  .auth-title {
+    font-size: 24px;
+    color: #0077be;
+    margin-bottom: 20px;
+  }
+  
+ 
+  .auth-form {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .auth-form label {
+    text-align: left;
+    font-weight: bold;
+    margin: 10px 0 5px;
+    color: #333;
+  }
+  
+  .auth-form input,
+  .auth-form select {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+    margin-bottom: 10px;
+  }
+  
+  .auth-form input:focus,
+  .auth-form select:focus {
+    border-color: #0077be;
+    outline: none;
+  }
+  
+
+  .auth-button {
+    padding: 12px;
+    background-color: #0077be;
+    color: white;
+    font-size: 16px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+  
+  .auth-button:hover {
+    background-color: #025383;
+  }
+  
+ 
+  .auth-toggle {
+    margin-top: 15px;
+    font-size: 14px;
+    color:#333;
+  }
+  
+  .auth-toggle span {
+    color: #0077be;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  
+  .auth-toggle span:hover {
+    text-decoration: underline;
+  }
+  
+  /* Error Message CSS */
+
+  .error-message {
+    color: red;
+    font-size: 0.9rem;
+    margin-top: 5px;
+  }
+  
