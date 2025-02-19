@@ -1,2 +1,2 @@
 # NCTHackathonPortal
-A community sponsored project about NCT Coding CLub Hackathon Portal. 
+A community sponsored project about NCT Coding Club Hackathon Portal. 
