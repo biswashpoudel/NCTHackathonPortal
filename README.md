@@ -93,7 +93,3 @@ We welcome contributions! To contribute, follow these steps:
 4. Commit your changes (`git commit -am 'Add new feature'`).
 5. Push your changes to your fork (`git push origin feature-name`).
 6. Create a pull request.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
