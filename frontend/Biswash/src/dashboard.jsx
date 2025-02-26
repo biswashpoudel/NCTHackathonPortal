@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useLocation, useNavigate, useRef } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { 
   FaTrophy, 
@@ -28,52 +28,8 @@ const Dashboard = () => {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [groupName, setGroupName]=useState("N/A")
-
-  // Create refs to detect clicks outside elements
-  const sidebarRef = useRef(null);
-  const profileDropdownRef = useRef(null);
-  const menuToggleRef = useRef(null);
-  const profileIconRef = useRef(null);
-
-  // Handle click outside of sidebar and profile dropdown
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      // For sidebar: Close if click is outside and sidebar is open
-      if (sidebarOpen && 
-          sidebarRef.current && 
-          !sidebarRef.current.contains(event.target) &&
-          menuToggleRef.current && 
-          !menuToggleRef.current.contains(event.target)) {
-        setSidebarOpen(false);
-      }
-      
-      // For profile dropdown: Close if click is outside and dropdown is open
-      if (showProfileDropdown && 
-          profileDropdownRef.current && 
-          !profileDropdownRef.current.contains(event.target) &&
-          profileIconRef.current && 
-          !profileIconRef.current.contains(event.target)) {
-        setShowProfileDropdown(false);
-      }
-    };
-
-    // Add event listener
-    document.addEventListener("mousedown", handleClickOutside);
-    
-    // Reset scroll position
-    window.scrollTo(0, 0);
-    
-    // Prevent automatic scrolling
-    document.body.style.overflow = "auto";
-    
-    // Cleanup
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.body.style.overflow = "";
-    };
-  }, [sidebarOpen, showProfileDropdown]);
 
   useEffect(() => {
     if (!username) {
@@ -91,7 +47,7 @@ const Dashboard = () => {
       const userSubmissions = res.data.filter(submission => 
         submission.uploadedBy === username
       );
-
+      
       setSubmissions(userSubmissions);
     } catch (err) {
       console.error("Error fetching submissions", err);
