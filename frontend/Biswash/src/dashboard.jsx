@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { 
@@ -29,18 +29,18 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [groupName, setGroupName] = useState("N/A");
-  
+  const [groupName, setGroupName]=useState("N/A")
+
   // Create refs to detect clicks outside elements
   const sidebarRef = useRef(null);
   const profileDropdownRef = useRef(null);
   const menuToggleRef = useRef(null);
   const profileIconRef = useRef(null);
 
-
+  // Handle click outside of sidebar and profile dropdown
   useEffect(() => {
     const handleClickOutside = (event) => {
-     
+      // For sidebar: Close if click is outside and sidebar is open
       if (sidebarOpen && 
           sidebarRef.current && 
           !sidebarRef.current.contains(event.target) &&
@@ -59,12 +59,13 @@ const Dashboard = () => {
       }
     };
 
+    // Add event listener
     document.addEventListener("mousedown", handleClickOutside);
     
-    
+    // Reset scroll position
     window.scrollTo(0, 0);
     
- 
+    // Prevent automatic scrolling
     document.body.style.overflow = "auto";
     
     // Cleanup
@@ -136,13 +137,11 @@ const Dashboard = () => {
     }
   };
 
-  const toggleProfileDropdown = (e) => {
-    e.stopPropagation(); // Prevent event from reaching document
+  const toggleProfileDropdown = () => {
     setShowProfileDropdown(!showProfileDropdown);
   };
 
-  const toggleSidebar = (e) => {
-    e.stopPropagation(); // Prevent event from reaching document
+  const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
 
@@ -159,30 +158,21 @@ const Dashboard = () => {
     <div className="dashboard-wrapper">
       <div className="dashboard-navbar">
         <div className="dashboard-navbar-left">
-          <button 
-            className="dashboard-menu-toggle" 
-            onClick={toggleSidebar}
-            ref={menuToggleRef}
-          >
+          <button className="dashboard-menu-toggle" onClick={toggleSidebar}>
             <FaBars />
           </button>
           <h2 className="dashboard-greeting">Hi, {username}</h2>
+
         </div>
        
+        
         <div className="dashboard-profile-container">
-          <div 
-            className="dashboard-profile-icon" 
-            onClick={toggleProfileDropdown}
-            ref={profileIconRef}
-          >
+          <div className="dashboard-profile-icon" onClick={toggleProfileDropdown}>
             {username ? username.charAt(0).toUpperCase() : "U"}
           </div>
           
           {showProfileDropdown && (
-            <div 
-              className="dashboard-profile-dropdown"
-              ref={profileDropdownRef}
-            >
+            <div className="dashboard-profile-dropdown">
               <div className="dashboard-dropdown-header">{username}</div>
               <ul className="dashboard-dropdown-menu">
                 <li onClick={() => navigate("/edit-profile")}>
@@ -204,10 +194,7 @@ const Dashboard = () => {
       </div>
 
       <div className="dashboard-main">
-        <div 
-          className={`dashboard-sidebar ${sidebarOpen ? "open" : "closed"}`}
-          ref={sidebarRef}
-        >
+        <div className={`dashboard-sidebar ${sidebarOpen ? "open" : "closed"}`}>
           <button 
             className="dashboard-sidebar-toggle" 
             onClick={toggleSidebar}
