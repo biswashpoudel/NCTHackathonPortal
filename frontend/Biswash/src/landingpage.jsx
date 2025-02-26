@@ -30,10 +30,10 @@ const LandingPage = () => {
 
   return (
     <div className="landing-container">
-      <nav className="navbar">
+      <nav className="landing-navbar">
       <Link to="/" className="logo-wrapper">  
         <div className="logo-container">
-        <img src={logo} alt="Hackathon Portal Logo" className="logo-image"/>
+         <img src={logo} alt="Hackathon Portal Logo" className="logo-image"/>
         </div>
       </Link>
         

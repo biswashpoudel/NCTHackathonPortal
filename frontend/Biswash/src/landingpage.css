@@ -11,7 +11,7 @@ body {
     display: flex;
     align-items: center;  
     text-decoration: none; 
-    gap: 10px;
+    /* gap: 15px; */
   }
   .logo-container {
     width: 60px; 
@@ -28,15 +28,25 @@ body {
     height: auto;
   }
  
-  .navbar {
+  .landing-navbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
     background-color: #0077be;
-    padding: 15px 50px;
+    padding: 15px 30px;
     color: white;
   }
-  
+
+  @media (max-width: 768px) {
+     .navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #0077be;
+    padding: 15px 20px;
+    color: white;
+  }
+  }
   .logo {
     font-size: 24px;
     font-weight: bold;
@@ -44,7 +54,7 @@ body {
 
   .nav-buttons {
     display: flex;
-    gap: 15px;
+    gap: 20px;
   }
 
   .getstarted-button{
@@ -69,9 +79,10 @@ body {
   
 
   .hero {
-    padding: 50px;
+    padding: 38px;
     background-color: #0077be;
     color: white;
+    text-align: center;
   }
   
   .hero h1 {
@@ -81,6 +92,31 @@ body {
   .hero p {
     font-size: 18px;
     margin-top: 10px;
+  }
+  
+  /* Responsive Styles */
+  @media (max-width: 1024px) {
+    .hero h1 {
+      font-size: 32px;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .hero h1 {
+      font-size: 28px;
+    }
+    .hero p {
+      font-size: 16px;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .hero h1 {
+      font-size: 24px;
+    }
+    .hero p {
+      font-size: 14px;
+    }
   }
   
   .hero .cta-button {
@@ -362,15 +398,15 @@ body {
 
 @media (max-width: 480px) {
   .footer-info h3 {
-    font-size: 18px; /* Keep font size consistent */
+    font-size: 18px; 
   }
 
   .footer-info p {
-    font-size: 18px; /* Keep font size consistent */
+    font-size: 18px; 
   }
 
   .footer-nav a {
-    font-size: 16px; /* Keep font size consistent */
+    font-size: 16px; 
   }
 
   .footer-map iframe {

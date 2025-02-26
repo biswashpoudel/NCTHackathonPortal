@@ -10,6 +10,7 @@ redirects = []
 publish = "C:\\Users\\poude\\OneDrive\\Desktop\\biswash\\frontend\\Biswash\\dist"
 publishOrigin = "ui"
 commandOrigin = "ui"
+base = "C:\\Users\\poude\\OneDrive\\Desktop\\biswash\\frontend\\Biswash"
 command = "vite build"
 
 [build.environment]

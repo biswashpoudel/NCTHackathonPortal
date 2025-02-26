@@ -15,13 +15,12 @@ app.use(bodyParser.json());
 app.use("/uploads", express.static("uploads")); // Serve static files from uploads folder
 
 // MongoDB Connection
-mongoose.connect("mongodb://127.0.0.1:27017/mydatabase", {
+mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-});
-const db = mongoose.connection;
-db.on("error", console.error.bind(console, "Connection error:"));
-db.once("open", () => console.log("Connected to MongoDB"));
+})
+.then(() => console.log("Connected to MongoDB Atlas"))
+.catch(err => console.error("Error connecting to MongoDB:", err));
 
 // User Schema
 const userSchema = new mongoose.Schema({

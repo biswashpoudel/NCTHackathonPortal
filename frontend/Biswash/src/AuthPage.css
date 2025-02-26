@@ -29,6 +29,7 @@
   .auth-form {
     display: flex;
     flex-direction: column;
+    border: #0077be 4px;
   }
   
   .auth-form label {
