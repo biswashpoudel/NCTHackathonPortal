@@ -43,11 +43,11 @@ const Dashboard = () => {
 
   const fetchSubmissions = async () => {
     try {
-      const res = await axios.get(`http://localhost:5000/submissions?username=${username}`);
+      const res = await axios.get(`https://ncthackathonportal.onrender.com/submissions?username=${username}`);
       const userSubmissions = res.data.filter(submission => 
         submission.uploadedBy === username
       );
-      
+
       setSubmissions(userSubmissions);
     } catch (err) {
       console.error("Error fetching submissions", err);
@@ -77,7 +77,7 @@ const Dashboard = () => {
     formData.append("uploadedBy", username); 
     
     try {
-      await axios.post("http://localhost:5000/upload", formData, {
+      await axios.post("https://ncthackathonportal.onrender.com/upload", formData, {
         headers: { 
           "Content-Type": "multipart/form-data"
         },
@@ -232,7 +232,7 @@ const Dashboard = () => {
                           <p>Uploaded by: <b>{submission.uploadedBy}</b><br></br>Group:{groupName} </p>
                         </div>
                         <a
-                          href={`http://localhost:5000/download/${submission.filename}`}
+                          href={`https://ncthackathonportal.onrender.com/${submission.filename}`}
                           download
                           className="dashboard-view-button"
                         >

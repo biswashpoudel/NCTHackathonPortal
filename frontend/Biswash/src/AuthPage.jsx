@@ -33,7 +33,7 @@ const AuthPage = ({ isLogin: propIsLogin }) => {
     setErrorMessage("");
     try {
       if (isLogin) {
-        const res = await axios.post("http://localhost:5000/login", {
+        const res = await axios.post("https://ncthackathonportal.onrender.com/login", {
           email: formData.email,
           password: formData.password,
         });
@@ -50,7 +50,7 @@ const AuthPage = ({ isLogin: propIsLogin }) => {
           return;
         }
 
-        const res = await axios.post("http://localhost:5000/register", {
+        const res = await axios.post("https://ncthackathonportal.onrender.com/register", {
           username: formData.username,
           email: formData.email,
           password: formData.password,
@@ -75,7 +75,6 @@ const AuthPage = ({ isLogin: propIsLogin }) => {
               <>
                 <label>Username:</label>
                 <input type="text" name="username" value={formData.username} onChange={handleChange} required />
-
               </>
             )}
             <label>Email:</label>
@@ -103,5 +102,6 @@ const AuthPage = ({ isLogin: propIsLogin }) => {
     </div>
   );
 };
+
 
 export default AuthPage;
