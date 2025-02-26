@@ -191,14 +191,15 @@ app.get("/teams", async (req, res) => {
 });
 
 // Get All Submissions
-app.get("/submissions", async (req, res) => {
+const getSubmissions = async () => {
   try {
-    const submissions = await Submission.find();
-    res.json(submissions);
+    const response = await axios.get('https://ncthackathonportal.onrender.com/api/submissions');
+    console.log(response.data); // Check the response
+    setSubmissions(response.data); // Use the data in your state
   } catch (error) {
-    res.status(500).json({ message: "Error fetching submissions", error });
+    console.error('Error fetching submissions:', error);
   }
-});
+};
 
 // Submit Feedback & Grade (Judge)
 app.post("/submit-feedback", async (req, res) => {

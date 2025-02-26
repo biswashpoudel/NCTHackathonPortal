@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { 
@@ -28,8 +28,51 @@ const Dashboard = () => {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [groupName, setGroupName]=useState("N/A")
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [groupName, setGroupName] = useState("N/A");
+  
+  // Create refs to detect clicks outside elements
+  const sidebarRef = useRef(null);
+  const profileDropdownRef = useRef(null);
+  const menuToggleRef = useRef(null);
+  const profileIconRef = useRef(null);
+
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+     
+      if (sidebarOpen && 
+          sidebarRef.current && 
+          !sidebarRef.current.contains(event.target) &&
+          menuToggleRef.current && 
+          !menuToggleRef.current.contains(event.target)) {
+        setSidebarOpen(false);
+      }
+      
+      // For profile dropdown: Close if click is outside and dropdown is open
+      if (showProfileDropdown && 
+          profileDropdownRef.current && 
+          !profileDropdownRef.current.contains(event.target) &&
+          profileIconRef.current && 
+          !profileIconRef.current.contains(event.target)) {
+        setShowProfileDropdown(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    
+    
+    window.scrollTo(0, 0);
+    
+ 
+    document.body.style.overflow = "auto";
+    
+    // Cleanup
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.body.style.overflow = "";
+    };
+  }, [sidebarOpen, showProfileDropdown]);
 
   useEffect(() => {
     if (!username) {
@@ -93,11 +136,13 @@ const Dashboard = () => {
     }
   };
 
-  const toggleProfileDropdown = () => {
+  const toggleProfileDropdown = (e) => {
+    e.stopPropagation(); // Prevent event from reaching document
     setShowProfileDropdown(!showProfileDropdown);
   };
 
-  const toggleSidebar = () => {
+  const toggleSidebar = (e) => {
+    e.stopPropagation(); // Prevent event from reaching document
     setSidebarOpen(!sidebarOpen);
   };
 
@@ -114,21 +159,30 @@ const Dashboard = () => {
     <div className="dashboard-wrapper">
       <div className="dashboard-navbar">
         <div className="dashboard-navbar-left">
-          <button className="dashboard-menu-toggle" onClick={toggleSidebar}>
+          <button 
+            className="dashboard-menu-toggle" 
+            onClick={toggleSidebar}
+            ref={menuToggleRef}
+          >
             <FaBars />
           </button>
           <h2 className="dashboard-greeting">Hi, {username}</h2>
-
         </div>
        
-        
         <div className="dashboard-profile-container">
-          <div className="dashboard-profile-icon" onClick={toggleProfileDropdown}>
+          <div 
+            className="dashboard-profile-icon" 
+            onClick={toggleProfileDropdown}
+            ref={profileIconRef}
+          >
             {username ? username.charAt(0).toUpperCase() : "U"}
           </div>
           
           {showProfileDropdown && (
-            <div className="dashboard-profile-dropdown">
+            <div 
+              className="dashboard-profile-dropdown"
+              ref={profileDropdownRef}
+            >
               <div className="dashboard-dropdown-header">{username}</div>
               <ul className="dashboard-dropdown-menu">
                 <li onClick={() => navigate("/edit-profile")}>
@@ -150,7 +204,10 @@ const Dashboard = () => {
       </div>
 
       <div className="dashboard-main">
-        <div className={`dashboard-sidebar ${sidebarOpen ? "open" : "closed"}`}>
+        <div 
+          className={`dashboard-sidebar ${sidebarOpen ? "open" : "closed"}`}
+          ref={sidebarRef}
+        >
           <button 
             className="dashboard-sidebar-toggle" 
             onClick={toggleSidebar}

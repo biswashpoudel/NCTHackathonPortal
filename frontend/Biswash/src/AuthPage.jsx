@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import { useNavigate, useLocation } from "react-router-dom";
+import React, { useState, useEffect } from "react"; 
+import axios from "axios"; 
+import { useNavigate, useLocation } from "react-router-dom"; 
 import "./AuthPage.css";
 
 const AuthPage = ({ isLogin: propIsLogin }) => {
   const location = useLocation();
   const [isLogin, setIsLogin] = useState(propIsLogin);
   const [errorMessage, setErrorMessage] = useState(""); 
+  const [usernameError, setUsernameError] = useState(""); 
 
   useEffect(() => {
     setIsLogin(location.pathname === "/login"); 
@@ -26,6 +27,20 @@ const AuthPage = ({ isLogin: propIsLogin }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+
+    // Validate username for industry level rules
+    if (name === "username") {
+      // Check if username matches the pattern
+      const usernamePattern = /^[a-zA-Z0-9]([a-zA-Z0-9_-]{1,18}[a-zA-Z0-9])?$/;
+      
+      if (!usernamePattern.test(value)) {
+        setUsernameError(
+          "Username must be 3-20 characters, containing only letters, numbers, underscores (_), and hyphens (-). No symbols at the start or end."
+        );
+      } else {
+        setUsernameError("");
+      }
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -39,7 +54,7 @@ const AuthPage = ({ isLogin: propIsLogin }) => {
         });
 
         const { role, username } = res.data;
-        localStorage.setItem("username", username)
+        localStorage.setItem("username", username);
         if (role === "admin") navigate(`/admin-dashboard?username=${username}`);
         else if (role === "judge") navigate(`/judge-dashboard?username=${username}`);
         else if (role === "mentor") navigate(`/mentor-dashboard?username=${username}`);
@@ -74,21 +89,48 @@ const AuthPage = ({ isLogin: propIsLogin }) => {
             {!isLogin && (
               <>
                 <label>Username:</label>
-                <input type="text" name="username" value={formData.username} onChange={handleChange} required />
+                <input
+                  type="text"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleChange}
+                  required
+                />
+                {usernameError && <p className="error-message">{usernameError}</p>}
               </>
             )}
             <label>Email:</label>
-            <input type="email" name="email" value={formData.email} onChange={handleChange} required />
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+            />
             <label>Password:</label>
-            <input type="password" name="password" value={formData.password} onChange={handleChange} required />
+            <input
+              type="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              required
+            />
             {!isLogin && (
               <>
                 <label>Confirm Password:</label>
-                <input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} required />
-              </>  
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  required
+                />
+              </>
             )}
             {errorMessage && <p className="error-message">{errorMessage}</p>}
-            <button type="submit" className="auth-button">{isLogin ? "Login" : "Register"}</button>
+            <button type="submit" className="auth-button">
+              {isLogin ? "Login" : "Register"}
+            </button>
           </form>
           <p className="auth-toggle">
             {isLogin ? (
@@ -102,6 +144,5 @@ const AuthPage = ({ isLogin: propIsLogin }) => {
     </div>
   );
 };
-
 
 export default AuthPage;
