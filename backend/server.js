@@ -52,8 +52,6 @@ const teamSchema = new mongoose.Schema({
 
 const Team = mongoose.model("Team", teamSchema);
 
-
-
 // Submission Schema
 const submissionSchema = new mongoose.Schema({
   filename: { type: String, required: true },
@@ -124,6 +122,34 @@ app.post("/upload", upload.single("file"), async (req, res) => {
     res.status(500).json({ message: "Error saving file metadata", error });
   }
 });
+
+// Get All Submissions 
+app.get("/api/submissions", async (req, res) => {
+  try {
+    const submissions = await Submission.find();
+    res.status(200).json(submissions);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching submissions", error });
+  }
+});
+
+// Get User-Specific Submissions (Fixed)
+app.get("/submissions", async (req, res) => {
+  const { username } = req.query;
+  
+  try {
+    let query = {};
+    if (username) {
+      query = { uploadedBy: username };
+    }
+    
+    const submissions = await Submission.find(query);
+    res.status(200).json(submissions);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching submissions", error });
+  }
+});
+
 app.post("/hackathon-participants", async (req, res) => {
   const { studentId, firstName, lastName, email, college } = req.body;
 
@@ -158,6 +184,7 @@ app.post("/team-formation", async (req, res) => {
     res.status(500).json({ message: "Error creating team", error });
   }
 });
+
 app.post("/join-team", async (req, res) => {
   const { teamId, participantId } = req.body;
 
@@ -181,6 +208,7 @@ app.post("/join-team", async (req, res) => {
     res.status(500).json({ message: "Error joining team", error });
   }
 });
+
 app.get("/teams", async (req, res) => {
   try {
     const teams = await Team.find().populate("members", "firstName lastName email");
@@ -189,17 +217,6 @@ app.get("/teams", async (req, res) => {
     res.status(500).json({ message: "Error fetching teams", error });
   }
 });
-
-// Get All Submissions
-const getSubmissions = async () => {
-  try {
-    const response = await axios.get('https://ncthackathonportal.onrender.com/api/submissions');
-    console.log(response.data); // Check the response
-    setSubmissions(response.data); // Use the data in your state
-  } catch (error) {
-    console.error('Error fetching submissions:', error);
-  }
-};
 
 // Submit Feedback & Grade (Judge)
 app.post("/submit-feedback", async (req, res) => {

@@ -1,115 +1,104 @@
-import React, { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import axios from "axios";
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import "./judgedashboard.css";
 
 const JudgeDashboard = () => {
-  const [submissions, setSubmissions] = useState([]);
-  const [selectedSubmission, setSelectedSubmission] = useState(null);
-  const [feedback, setFeedback] = useState("");
-  const [grade, setGrade] = useState("");
-  const navigate = useNavigate(); 
-  const location = useLocation();
-  const queryParams = new URLSearchParams(location.search);
-  const username = queryParams.get("username");
+    const navigate = useNavigate();
+    const [submissions, setSubmissions] = useState([]);
+    const [selectedSubmission, setSelectedSubmission] = useState(null);
+    const [feedback, setFeedback] = useState('');
+    const [grade, setGrade] = useState(0);
+    const [username, setUsername] = useState(localStorage.getItem("username"));
 
-  useEffect(() => {
-    axios.get("http://localhost:5000/submissions")
-      .then((res) => {
-        setSubmissions(res.data);
-      })
-      .catch((err) => console.error("Error fetching submissions", err));
-  }, []);
+    useEffect(() => {
+        const fetchSubmissions = async () => {
+            try {
+                const response = await axios.get('https://ncthackathonportal.onrender.com/api/submissions');
+                setSubmissions(response.data);
+            } catch (error) {
+                console.error('Error fetching submissions:', error);
+            }
+        };
+        fetchSubmissions();
+    }, []);
 
-  const handleLogout = () => {
-    navigate("/"); 
-  };
-
-  const handleFeedbackChange = (e) => {
-    setFeedback(e.target.value);
-  };
-
-  const handleGradeChange = (e) => {
-    setGrade(e.target.value);
-  };
-
-  const handleSubmitFeedback = async () => {
-    if (!selectedSubmission || grade === "") {
-      alert("Please select a submission and provide a grade.");
-      return;
-    }
-
-    const payload = {
-      submissionId: selectedSubmission._id,
-      feedback,
-      grade: parseInt(grade),
+    const handleLogout = () => {
+        localStorage.removeItem("username");
+        navigate("/");
     };
 
-    try {
-      await axios.post("http://localhost:5000/submit-feedback", payload);
-      alert("Feedback and grade submitted successfully!");
+    const selectSubmission = (submission) => {
+        setSelectedSubmission(submission);
+        setFeedback(submission.feedback || '');
+        setGrade(submission.grade || 0);
+    };
 
-      const updatedSubmissions = await axios.get("http://localhost:5000/submissions");
-      setSubmissions(updatedSubmissions.data);
-      setSelectedSubmission(null);
-      setFeedback("");
-      setGrade("");
-    } catch (error) {
-      alert("Failed to submit feedback and grade");
-    }
-  };
+    const handleGradeChange = (e) => {
+        const value = Math.max(0, Math.min(100, Number(e.target.value)));
+        setGrade(value);
+    };
 
-  return (
-    <div className="judge-dashboard">
-      <h1> Welcome, {username}
-      <button className="logout-btn" onClick={handleLogout}>
-        Logout
-      </button>
-      </h1>
-     
+    const handleSubmitFeedback = async () => {
+        if (!selectedSubmission) return alert("No submission selected");
+        if (grade < 0 || grade > 100) return alert("Grade must be between 0 and 100");
 
-      <h2>Submissions</h2>
-      <ul>
-        {submissions.length > 0 ? (
-          submissions.map((submission) => (
-            <li key={submission._id}>
-              <p>
-                <strong>{submission.filename}</strong> uploaded by {submission.uploadedBy}
-              </p>
-              <a href={`http://localhost:5000/download/${submission.filename}`} download>
-                <button>Download</button>
-              </a>
-              <button onClick={() => setSelectedSubmission(submission)}>Provide Feedback</button>
-            </li>
-          ))
-        ) : (
-          <p>No submissions yet</p>
-        )}
-      </ul>
+        try {
+            const response = await axios.put("https://ncthackathonportal.onrender.com/api/submit-feedback", {
+                submissionId: selectedSubmission._id,
+                feedback,
+                grade,
+                judgeUsername: username
+            });
+            alert(response.data.message);
+            setSubmissions(prevSubmissions => prevSubmissions.map(sub => sub._id === selectedSubmission._id ? response.data.submission : sub));
+            setSelectedSubmission(null);
+            setFeedback('');
+            setGrade(0);
+        } catch (error) {
+            console.error("Error submitting feedback:", error);
+            alert("Failed to submit feedback");
+        }
+    };
 
-      {selectedSubmission && (
-        <div className="feedback-form">
-          <h3>Provide Feedback for {selectedSubmission.filename}</h3>
-          <textarea
-            value={feedback}
-            onChange={handleFeedbackChange}
-            placeholder="Enter feedback here..."
-          />
-          <br />
-          <input
-            type="number"
-            value={grade}
-            onChange={handleGradeChange}
-            placeholder="Enter grade (out of 100)"
-            max="100"
-            min="0"
-          />
-          <br />
-          <button onClick={handleSubmitFeedback}>Submit Feedback and Grade</button>
+    return (
+        <div className="judge-dashboard">
+            <div className="dashboard-header">
+                <h1>Welcome, {username}</h1>
+                <button className="logout-btn" onClick={handleLogout}>Logout</button>
+            </div>
+            
+            <h2>Submissions</h2>
+            <ul className="submission-list">
+                {submissions.map((submission) => (
+                    <li key={submission._id} onClick={() => selectSubmission(submission)}>
+                        {submission.projectTitle} - {submission.teamName}
+                    </li>
+                ))}
+            </ul>
+            
+            {selectedSubmission && (
+                <div className="feedback-section">
+                    <h3>Grading: {selectedSubmission.projectTitle} - {selectedSubmission.teamName}</h3>
+                    <p><strong>Previous Feedback:</strong> {selectedSubmission.feedback || "None"}</p>
+                    <p><strong>Grade Given:</strong> {selectedSubmission.grade !== null ? selectedSubmission.grade : "Not graded yet"}</p>
+                    <textarea 
+                        value={feedback} 
+                        onChange={(e) => setFeedback(e.target.value)} 
+                        placeholder="Enter feedback"
+                    />
+                    <input 
+                        type="number" 
+                        value={grade} 
+                        onChange={handleGradeChange} 
+                        min="0" 
+                        max="100"
+                    />
+                    <button onClick={handleSubmitFeedback}>Submit Feedback</button>
+                </div>
+            )}
         </div>
-      )}
-    </div>
-  );
+    );
 };
 
 export default JudgeDashboard;
