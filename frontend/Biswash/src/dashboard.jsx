@@ -607,9 +607,9 @@ const Dashboard = () => {
                             <br />
                             Group: <b>{submission.groupName || "N/A"}</b>
                             <br />
-                            Current Grade: <b>{submission.grade} </b>
+                            Grade: <b>{submission.grade} </b>
                             <br />
-                            Current Feedback: <b>{submission.feedback}</b>
+                            Feedback: <b>{submission.feedback}</b>
                           </p>
                         </div>
                         <a

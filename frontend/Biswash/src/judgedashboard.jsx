@@ -239,8 +239,8 @@ const JudgeDashboard = () => {
                         {/* Display existing grade and feedback if available */}
                         {submission.grade !== null && (
                           <div className="dashboard-existing-feedback">
-                            <p>Current Grade: <b>{submission.grade}</b></p>
-                            <p>Current Feedback: <b>{submission.feedback}</b></p>
+                            <p>Grade: <b>{submission.grade}</b></p>
+                            <p>Feedback: <b>{submission.feedback}</b></p>
                           </div>
                         )}
                       </div>
