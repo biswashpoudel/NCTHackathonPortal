@@ -42,6 +42,8 @@ const Dashboard = () => {
     description: "",
     members: []
   });
+  const [showParticipantsList, setShowParticipantsList] = useState(false);
+  const [existingGroupMembers, setExistingGroupMembers] = useState([]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -64,6 +66,19 @@ const Dashboard = () => {
     fetchGroups();
     fetchUserGroups();
   }, [username, navigate]);
+
+  // Get all existing group members to prevent duplicate additions
+  useEffect(() => {
+    if (groups.length > 0) {
+      const allGroupMembers = new Set();
+      groups.forEach(group => {
+        group.members.forEach(member => {
+          allGroupMembers.add(member);
+        });
+      });
+      setExistingGroupMembers(Array.from(allGroupMembers));
+    }
+  }, [groups]);
 
   const fetchSubmissions = async () => {
     try {
@@ -170,6 +185,15 @@ const Dashboard = () => {
         members: [...newGroup.members, member]
       });
     }
+  };
+
+  const toggleParticipantsList = () => {
+    setShowParticipantsList(!showParticipantsList);
+  };
+
+  // Check if a user is already in any group
+  const isUserInAnyGroup = (username) => {
+    return existingGroupMembers.includes(username);
   };
 
   const handleLogout = () => {
@@ -396,24 +420,67 @@ const Dashboard = () => {
                       </div>
                       <div className="dashboard-form-group">
                         <label>Add Members (Max 4 additional members):</label>
-                        <div className="dashboard-participants-list">
-                          {participants
-                            .filter(p => p.username !== username)
-                            .map(participant => (
-                              <div key={participant.username} className="dashboard-participant-item">
-                                <input
-                                  type="checkbox"
-                                  id={`member-${participant.username}`}
-                                  checked={newGroup.members.includes(participant.username)}
-                                  onChange={() => handleAddMember(participant.username)}
-                                  disabled={newGroup.members.length >= 4 && !newGroup.members.includes(participant.username)}
-                                />
-                                <label htmlFor={`member-${participant.username}`}>
-                                  {participant.username} ({participant.email})
-                                </label>
-                              </div>
-                            ))}
+                        <div className="dashboard-members-dropdown">
+                          <button 
+                            type="button" 
+                            className="dashboard-dropdown-toggle"
+                            onClick={toggleParticipantsList}
+                          >
+                            {newGroup.members.length > 0 
+                              ? `${newGroup.members.length} members selected` 
+                              : "Select members"}
+                          </button>
+                          
+                          {showParticipantsList && (
+                            <div className="dashboard-participants-list">
+                              {participants
+                                .filter(p => p.username !== username)
+                                .map(participant => {
+                                  const isInGroup = isUserInAnyGroup(participant.username);
+                                  const isInThisGroup = newGroup.members.includes(participant.username);
+                                  
+                                  return (
+                                    <div key={participant.username} className="dashboard-participant-item">
+                                      <input
+                                        type="checkbox"
+                                        id={`member-${participant.username}`}
+                                        checked={isInThisGroup}
+                                        onChange={() => handleAddMember(participant.username)}
+                                        disabled={(isInGroup && !isInThisGroup) || 
+                                                 (newGroup.members.length >= 4 && !isInThisGroup)}
+                                      />
+                                      <label 
+                                        htmlFor={`member-${participant.username}`}
+                                        className={isInGroup && !isInThisGroup ? "dashboard-member-disabled" : ""}
+                                      >
+                                        {participant.username} ({participant.email})
+                                        {isInGroup && !isInThisGroup && " - Already in a group"}
+                                      </label>
+                                    </div>
+                                  );
+                                })}
+                            </div>
+                          )}
                         </div>
+                        {newGroup.members.length > 0 && (
+                          <div className="dashboard-selected-members">
+                            <h4>Selected Members:</h4>
+                            <ul>
+                              {newGroup.members.map(member => (
+                                <li key={member}>
+                                  {member} 
+                                  <button 
+                                    type="button" 
+                                    className="dashboard-remove-member"
+                                    onClick={() => handleAddMember(member)}
+                                  >
+                                    ×
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                       </div>
                       <button 
                         className="dashboard-button" 
