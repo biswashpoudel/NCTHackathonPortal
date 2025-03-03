@@ -28,34 +28,25 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   role: { type: String, required: true, enum: ["user", "judge", "mentor", "admin"], default: "user" },
+  isParticipating: { type: Boolean, default: false },
 });
 const User = mongoose.model("User", userSchema);
 
-const participantSchema = new mongoose.Schema({
-  studentId: { type: String, required: true, unique: true },
-  firstName: { type: String, required: true },
-  lastName: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  college: { type: String, required: true },
-  teamId: { type: mongoose.Schema.Types.ObjectId, ref: "Team", default: null },
-});
-
-const Participant = mongoose.model("Participant", participantSchema);
-
-const teamSchema = new mongoose.Schema({
+// Group Schema
+const groupSchema = new mongoose.Schema({
   name: { type: String, required: true, unique: true },
-  logo: { type: String },
-  description: { type: String },
-  leader: { type: mongoose.Schema.Types.ObjectId, ref: "Participant", required: true },
-  members: [{ type: mongoose.Schema.Types.ObjectId, ref: "Participant" }],
+  description: { type: String, required: true },
+  members: [{ type: String }], // Array of usernames
+  createdBy: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
 });
-
-const Team = mongoose.model("Team", teamSchema);
+const Group = mongoose.model("Group", groupSchema);
 
 // Submission Schema
 const submissionSchema = new mongoose.Schema({
   filename: { type: String, required: true },
   uploadedBy: { type: String, required: true },
+  groupName: { type: String, required: true },
   date: { type: Date, default: Date.now },
   feedback: { type: String, default: "" },
   grade: { type: Number, default: null },
@@ -109,13 +100,89 @@ app.post("/login", async (req, res) => {
   }
 });
 
+// Participation Route
+app.post("/participate", async (req, res) => {
+  const { username } = req.body;
+  
+  try {
+    const user = await User.findOneAndUpdate(
+      { username },
+      { isParticipating: true },
+      { new: true }
+    );
+    
+    if (!user) return res.status(404).json({ message: "User not found" });
+    
+    res.status(200).json({ message: "Successfully registered for hackathon", user });
+  } catch (error) {
+    res.status(500).json({ message: "Error updating participation status", error });
+  }
+});
+
+// Get All Participating Users
+app.get("/participants", async (req, res) => {
+  try {
+    const participants = await User.find({ isParticipating: true }, { username: 1, email: 1, _id: 0 });
+    res.status(200).json(participants);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching participants", error });
+  }
+});
+
+// Create Group
+app.post("/groups", async (req, res) => {
+  const { name, description, members, createdBy } = req.body;
+  
+  try {
+    // Check if group name already exists
+    const existingGroup = await Group.findOne({ name });
+    if (existingGroup) return res.status(400).json({ message: "Group name already taken" });
+    
+    // Validate group size
+    if (members.length > 5) return res.status(400).json({ message: "Maximum 5 members allowed per group" });
+    
+    const newGroup = new Group({ name, description, members, createdBy });
+    await newGroup.save();
+    
+    res.status(201).json({ message: "Group created successfully", group: newGroup });
+  } catch (error) {
+    res.status(500).json({ message: "Error creating group", error });
+  }
+});
+
+// Get All Groups
+app.get("/groups", async (req, res) => {
+  try {
+    const groups = await Group.find();
+    res.status(200).json(groups);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching groups", error });
+  }
+});
+
+// Get Groups for a specific user
+app.get("/user-groups", async (req, res) => {
+  const { username } = req.query;
+  
+  try {
+    const groups = await Group.find({ members: username });
+    res.status(200).json(groups);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching user groups", error });
+  }
+});
+
 // Upload Route
 app.post("/upload", upload.single("file"), async (req, res) => {
-  const { uploadedBy } = req.body;
+  const { uploadedBy, groupName } = req.body;
   if (!req.file) return res.status(400).json({ message: "No file uploaded" });
 
   try {
-    const submission = new Submission({ filename: req.file.filename, uploadedBy });
+    const submission = new Submission({ 
+      filename: req.file.filename, 
+      uploadedBy,
+      groupName: groupName || "N/A" 
+    });
     await submission.save();
     res.status(200).json({ message: "File uploaded successfully", filename: req.file.filename });
   } catch (error) {
@@ -133,7 +200,7 @@ app.get("/api/submissions", async (req, res) => {
   }
 });
 
-// Get User-Specific Submissions (Fixed)
+// Get User-Specific Submissions
 app.get("/submissions", async (req, res) => {
   const { username } = req.query;
   
@@ -147,74 +214,6 @@ app.get("/submissions", async (req, res) => {
     res.status(200).json(submissions);
   } catch (error) {
     res.status(500).json({ message: "Error fetching submissions", error });
-  }
-});
-
-app.post("/hackathon-participants", async (req, res) => {
-  const { studentId, firstName, lastName, email, college } = req.body;
-
-  try {
-    const existingParticipant = await Participant.findOne({ email });
-    if (existingParticipant) return res.status(400).json({ message: "You are already registered!" });
-
-    const newParticipant = new Participant({ studentId, firstName, lastName, email, college });
-    await newParticipant.save();
-
-    res.status(201).json({ message: "Successfully registered for the hackathon!", participant: newParticipant });
-  } catch (error) {
-    res.status(500).json({ message: "Error registering for hackathon", error });
-  }
-});
-
-app.post("/team-formation", async (req, res) => {
-  const { name, logo, description, leaderId } = req.body;
-
-  try {
-    const leader = await Participant.findById(leaderId);
-    if (!leader) return res.status(404).json({ message: "Leader not found" });
-
-    const team = new Team({ name, logo, description, leader: leaderId, members: [leaderId] });
-    await team.save();
-
-    leader.teamId = team._id;
-    await leader.save();
-
-    res.status(201).json({ message: "Team created successfully!", team });
-  } catch (error) {
-    res.status(500).json({ message: "Error creating team", error });
-  }
-});
-
-app.post("/join-team", async (req, res) => {
-  const { teamId, participantId } = req.body;
-
-  try {
-    const team = await Team.findById(teamId).populate("members");
-    if (!team) return res.status(404).json({ message: "Team not found" });
-
-    if (team.members.length >= 5) return res.status(400).json({ message: "Team is already full" });
-
-    const participant = await Participant.findById(participantId);
-    if (!participant) return res.status(404).json({ message: "Participant not found" });
-
-    team.members.push(participantId);
-    participant.teamId = teamId;
-
-    await team.save();
-    await participant.save();
-
-    res.status(200).json({ message: "Joined team successfully!", team });
-  } catch (error) {
-    res.status(500).json({ message: "Error joining team", error });
-  }
-});
-
-app.get("/teams", async (req, res) => {
-  try {
-    const teams = await Team.find().populate("members", "firstName lastName email");
-    res.json(teams);
-  } catch (error) {
-    res.status(500).json({ message: "Error fetching teams", error });
   }
 });
 

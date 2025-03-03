@@ -1,104 +1,258 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
-import "./judgedashboard.css";
-
+import React, { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import axios from "axios";
+import {
+  FaTrophy,
+  FaFileUpload,
+  FaComments,
+  FaBell,
+  FaLaptopCode,
+  FaUserEdit,
+  FaCog,
+  FaSignOutAlt,
+  FaBars,
+  FaChevronLeft,
+  FaChevronRight,
+  FaDownload,
+} from "react-icons/fa";
+import "./judgedashboard.css"
 const JudgeDashboard = () => {
-    const navigate = useNavigate();
-    const [submissions, setSubmissions] = useState([]);
-    const [selectedSubmission, setSelectedSubmission] = useState(null);
-    const [feedback, setFeedback] = useState('');
-    const [grade, setGrade] = useState(0);
-    const [username, setUsername] = useState(localStorage.getItem("username"));
+  const location = useLocation();
+  const navigate = useNavigate();
+  const queryParams = new URLSearchParams(location.search);
+  const username = queryParams.get("username");
 
-    useEffect(() => {
-        const fetchSubmissions = async () => {
-            try {
-                const response = await axios.get('https://ncthackathonportal.onrender.com/api/submissions');
-                setSubmissions(response.data);
-            } catch (error) {
-                console.error('Error fetching submissions:', error);
-            }
-        };
-        fetchSubmissions();
-    }, []);
+  const [activeTab, setActiveTab] = useState("judgeSubmissions");
+  const [submissions, setSubmissions] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-    const handleLogout = () => {
-        localStorage.removeItem("username");
-        navigate("/");
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    document.body.style.overflow = "auto";
+    return () => {
+      document.body.style.overflow = "";
     };
+  }, []);
 
-    const selectSubmission = (submission) => {
-        setSelectedSubmission(submission);
-        setFeedback(submission.feedback || '');
-        setGrade(submission.grade || 0);
-    };
+  useEffect(() => {
+    if (!username) {
+      console.log("No username found, redirecting to login");
+      navigate("/", { replace: true });
+      return;
+    }
+    fetchAllSubmissions();
+  }, [username, navigate]);
 
-    const handleGradeChange = (e) => {
-        const value = Math.max(0, Math.min(100, Number(e.target.value)));
-        setGrade(value);
-    };
+  const fetchAllSubmissions = async () => {
+    try {
+      const res = await axios.get("https://ncthackathonportal.onrender.com/submissions");
+      setSubmissions(res.data);
+    } catch (err) {
+      console.error("Error fetching submissions", err);
+      alert("Failed to load submissions. Please try again.");
+    }
+  };
 
-    const handleSubmitFeedback = async () => {
-        if (!selectedSubmission) return alert("No submission selected");
-        if (grade < 0 || grade > 100) return alert("Grade must be between 0 and 100");
+  const handleLogout = () => {
+    localStorage.removeItem("authToken");
+    navigate("/", { replace: true });
+  };
 
-        try {
-            const response = await axios.put("https://ncthackathonportal.onrender.com/api/submit-feedback", {
-                submissionId: selectedSubmission._id,
-                feedback,
-                grade,
-                judgeUsername: username
-            });
-            alert(response.data.message);
-            setSubmissions(prevSubmissions => prevSubmissions.map(sub => sub._id === selectedSubmission._id ? response.data.submission : sub));
-            setSelectedSubmission(null);
-            setFeedback('');
-            setGrade(0);
-        } catch (error) {
-            console.error("Error submitting feedback:", error);
-            alert("Failed to submit feedback");
-        }
-    };
+  const toggleProfileDropdown = () => {
+    setShowProfileDropdown(!showProfileDropdown);
+  };
 
-    return (
-        <div className="judge-dashboard">
-            <div className="dashboard-header">
-                <h1>Welcome, {username}</h1>
-                <button className="logout-btn" onClick={handleLogout}>Logout</button>
-            </div>
-            
-            <h2>Submissions</h2>
-            <ul className="submission-list">
-                {submissions.map((submission) => (
-                    <li key={submission._id} onClick={() => selectSubmission(submission)}>
-                        {submission.projectTitle} - {submission.teamName}
-                    </li>
-                ))}
-            </ul>
-            
-            {selectedSubmission && (
-                <div className="feedback-section">
-                    <h3>Grading: {selectedSubmission.projectTitle} - {selectedSubmission.teamName}</h3>
-                    <p><strong>Previous Feedback:</strong> {selectedSubmission.feedback || "None"}</p>
-                    <p><strong>Grade Given:</strong> {selectedSubmission.grade !== null ? selectedSubmission.grade : "Not graded yet"}</p>
-                    <textarea 
-                        value={feedback} 
-                        onChange={(e) => setFeedback(e.target.value)} 
-                        placeholder="Enter feedback"
-                    />
-                    <input 
-                        type="number" 
-                        value={grade} 
-                        onChange={handleGradeChange} 
-                        min="0" 
-                        max="100"
-                    />
-                    <button onClick={handleSubmitFeedback}>Submit Feedback</button>
-                </div>
-            )}
-        </div>
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
+  const handleGradeChange = (submissionId, grade) => {
+    const updatedSubmissions = submissions.map((submission) =>
+      submission._id === submissionId ? { ...submission, grade } : submission
     );
+    setSubmissions(updatedSubmissions);
+  };
+
+  const handleFeedbackChange = (submissionId, feedback) => {
+    const updatedSubmissions = submissions.map((submission) =>
+      submission._id === submissionId ? { ...submission, feedback } : submission
+    );
+    setSubmissions(updatedSubmissions);
+  };
+
+  const submitGradeAndFeedback = async (submissionId) => {
+    const submission = submissions.find((sub) => sub._id === submissionId);
+    if (!submission.grade || !submission.feedback) {
+      alert("Please provide both grade and feedback.");
+      return;
+    }
+
+    try {
+      await axios.post("https://ncthackathonportal.onrender.com/submit-grade", {
+        submissionId,
+        grade: submission.grade,
+        feedback: submission.feedback,
+      });
+      alert("Grade and feedback submitted successfully!");
+    } catch (err) {
+      console.error("Error submitting grade and feedback", err);
+      alert("Failed to submit. Please try again.");
+    }
+  };
+
+  const menuItems = [
+    { id: "judgeSubmissions", label: "Judge Submissions", icon: <FaLaptopCode /> },
+    { id: "leaderboard", label: "Leaderboard", icon: <FaTrophy /> },
+    { id: "discussion", label: "Discussion", icon: <FaComments /> },
+    { id: "notifications", label: "Notifications", icon: <FaBell /> },
+  ];
+
+  return (
+    <div className="dashboard-wrapper">
+      <div className="dashboard-navbar">
+        <div className="dashboard-navbar-left">
+          <button className="dashboard-menu-toggle" onClick={toggleSidebar}>
+            <FaBars />
+          </button>
+          <h2 className="dashboard-greeting">Hi, Judge {username}</h2>
+        </div>
+
+        <div className="dashboard-profile-container">
+          <div className="dashboard-profile-icon" onClick={toggleProfileDropdown}>
+            {username ? username.charAt(0).toUpperCase() : "J"}
+          </div>
+
+          {showProfileDropdown && (
+            <div className="dashboard-profile-dropdown">
+              <div className="dashboard-dropdown-header">{username}</div>
+              <ul className="dashboard-dropdown-menu">
+                <li onClick={() => navigate("/edit-profile")}>
+                  <FaUserEdit className="dashboard-dropdown-icon" />
+                  Edit Profile
+                </li>
+                <li onClick={() => navigate("/settings")}>
+                  <FaCog className="dashboard-dropdown-icon" />
+                  Settings
+                </li>
+                <li onClick={handleLogout}>
+                  <FaSignOutAlt className="dashboard-dropdown-icon" />
+                  Logout
+                </li>
+              </ul>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="dashboard-main">
+        <div className={`dashboard-sidebar ${sidebarOpen ? "open" : "closed"}`}>
+          <button className="dashboard-sidebar-toggle" onClick={toggleSidebar}>
+            {sidebarOpen ? <FaChevronLeft /> : <FaChevronRight />}
+          </button>
+
+          <ul className="dashboard-sidebar-menu">
+            {menuItems.map((item) => (
+              <li
+                key={item.id}
+                className={activeTab === item.id ? "active" : ""}
+                onClick={() => setActiveTab(item.id)}
+              >
+                <span className="dashboard-menu-icon">{item.icon}</span>
+                <span className="dashboard-menu-text">{item.label}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="dashboard-content">
+          {activeTab === "judgeSubmissions" && (
+            <div className="dashboard-section">
+              <div className="dashboard-section-header">
+                <h2>All Submissions</h2>
+              </div>
+              <div className="dashboard-section-body">
+                {submissions.length > 0 ? (
+                  submissions.map((submission) => (
+                    <div key={submission._id} className="dashboard-submission-item">
+                      <div className="dashboard-submission-info">
+                        <h3>{submission.filename}</h3>
+                        <p>Uploaded by: <b>{submission.uploadedBy}</b></p>
+                      </div>
+                      <a
+                        href={`https://ncthackathonportal.onrender.com/${submission.filename}`}
+                        download
+                        className="dashboard-view-button"
+                      >
+                        <FaDownload /> Download
+                      </a>
+                      <div className="dashboard-grade-feedback">
+                        <input
+                          type="number"
+                          placeholder="Grade (0-100)"
+                          min="0"
+                          max="100"
+                          value={submission.grade || ""}
+                          onChange={(e) => handleGradeChange(submission._id, e.target.value)}
+                        />
+                        <textarea
+                          placeholder="Feedback"
+                          value={submission.feedback || ""}
+                          onChange={(e) => handleFeedbackChange(submission._id, e.target.value)}
+                        />
+                        <button
+                          className="dashboard-button"
+                          onClick={() => submitGradeAndFeedback(submission._id)}
+                        >
+                          Submit
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="dashboard-empty-state">No submissions found.</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === "leaderboard" && (
+            <div className="dashboard-section">
+              <div className="dashboard-section-header">
+                <h2>Leaderboard</h2>
+              </div>
+              <div className="dashboard-section-body">
+                <p className="dashboard-empty-state">Top participants will be displayed here.</p>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "discussion" && (
+            <div className="dashboard-section">
+              <div className="dashboard-section-header">
+                <h2>Discussion Forum</h2>
+              </div>
+              <div className="dashboard-section-body">
+                <p className="dashboard-empty-state">Connect with other participants here.</p>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "notifications" && (
+            <div className="dashboard-section">
+              <div className="dashboard-section-header">
+                <h2>Notifications</h2>
+              </div>
+              <div className="dashboard-section-body">
+                <p className="dashboard-empty-state">You have no new notifications.</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default JudgeDashboard;

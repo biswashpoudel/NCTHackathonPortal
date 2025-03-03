@@ -6,10 +6,10 @@ headers = []
 [functions."*"]
 
 [build]
-publish = "C:\\Users\\poude\\OneDrive\\Desktop\\biswash\\frontend\\Biswash\\dist"
+publish = "C:\\Users\\poude\\OneDrive\\Desktop\\nct\\frontend\\Biswash\\dist"
 publishOrigin = "ui"
 commandOrigin = "ui"
-base = "C:\\Users\\poude\\OneDrive\\Desktop\\biswash\\frontend\\Biswash"
+base = "C:\\Users\\poude\\OneDrive\\Desktop\\nct\\frontend\\Biswash"
 command = "vite build"
 
 [build.environment]

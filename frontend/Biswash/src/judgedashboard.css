@@ -1,132 +1,192 @@
-
+/* General Styles */
 .judge-dashboard {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: #f4f4f4;
-    text-align: center;
-   
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #f5f7fa;
+  font-family: Arial, sans-serif;
+  color: #333;
+  padding: 20px;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.dashboard-header h1 {
+  font-size: 24px;
+  color: #0077be;
+  margin: 0;
+}
+
+/* Logout Button */
+.logout-btn {
+  background-color: #ff4444;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(255, 68, 68, 0.2);
+}
+
+.logout-btn:hover {
+  background-color: #cc0000;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(255, 68, 68, 0.3);
+}
+
+.logout-btn svg {
+  margin-right: 8px;
+}
+
+/* Submissions List */
+.submission-list {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.submission-list li {
+  background-color: white;
+  padding: 15px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.submission-list li:hover {
+  background-color: #f0f7fc;
+}
+
+/* Feedback Section */
+.feedback-section {
+  background-color: white;
+  padding: 20px;
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-top: 20px;
+}
+
+.feedback-section h3 {
+  font-size: 20px;
+  color: #0077be;
+  margin-bottom: 15px;
+}
+
+.feedback-section p {
+  font-size: 16px;
+  color: #555;
+  margin-bottom: 10px;
+}
+
+.feedback-section textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  margin-bottom: 15px;
+  resize: vertical;
+  min-height: 100px;
+}
+
+.feedback-section input[type="number"] {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  margin-bottom: 15px;
+}
+
+/* Buttons in Feedback Section */
+.submit-feedback-btn {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(40, 167, 69, 0.2);
+  margin-right: 10px;
+}
+
+.submit-feedback-btn:hover {
+  background-color: #218838;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+}
+
+.cancel-feedback-btn {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
+}
+
+.cancel-feedback-btn:hover {
+  background-color: #c82333;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+}
+
+/* Icon Spacing in Buttons */
+.submit-feedback-btn svg,
+.cancel-feedback-btn svg {
+  margin-right: 8px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .judge-dashboard {
+      padding: 10px;
   }
 
-.judge-dashboard h1 {
-    background-color: #0077be;
-    display: flex;
-    justify-content: space-between;
-    align-items: center; 
-    padding: 20px;
-    color: white;
-    font-size: 20px;
-    margin: 0;
+  .dashboard-header h1 {
+      font-size: 20px;
   }
-  
 
   .logout-btn {
-    background-color: white;
-    color: #0077be;
-    border: none;
-    padding: 10px 20px;
-    font-size: 16px;
-    cursor: pointer;
-    border-radius: 5px;
+      padding: 8px 16px;
+      font-size: 14px;
   }
-  
-  .logout-btn:hover {
-    background-color: #ddd;
-  }
-  
-  
-  .logout-btn:hover {
-    background-color: #ddd;
-  }
-  
- 
-  h2 {
-    color: #0077be;
-    font-size: 24px;
-    margin-bottom: 20px;
-  }
-  
-  
-  ul {
-    list-style-type: none;
-    padding: 0;
-  }
-  
-  ul li {
-    padding: 10px;
-    background-color: #f9f9f9;
-    margin-bottom: 10px;
-    border-radius: 5px;
-    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
-    text-align: left;
-  }
-  
-  ul li:hover {
-    background-color: #e9e9e9;
-  }
-  
-  ul li button {
-    background-color: #0077be;
-    color: white;
-    padding: 8px 15px;
-    border: none;
-    cursor: pointer;
-    border-radius: 5px;
-    font-size: 14px;
-    margin-top: 10px;
-    margin-right: 10px;
-  }
-  
-  ul li button:hover {
-    background-color: #06517c;
-  }
-  
 
-  .feedback-form {
-    margin-top: 30px;
-    padding: 20px;
-    background-color: white;
-    border-radius: 5px;
-    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  .feedback-section h3 {
+      font-size: 18px;
   }
-  
-  .feedback-form h3 {
-    font-size: 22px;
-    margin-bottom: 20px;
+
+  .feedback-section textarea,
+  .feedback-section input[type="number"] {
+      font-size: 12px;
   }
-  
-  .feedback-form textarea {
-    width: 100%;
-    height: 100px;
-    padding: 10px;
-    border-radius: 5px;
-    border: 1px solid #ddd;
-    font-size: 16px;
-    margin-bottom: 15px;
-    box-sizing: border-box;
+
+  .submit-feedback-btn,
+  .cancel-feedback-btn {
+      padding: 8px 16px;
+      font-size: 14px;
   }
-  
-  .feedback-form input[type="number"] {
-    width: 100%;
-    padding: 10px;
-    border-radius: 5px;
-    border: 1px solid #ddd;
-    font-size: 16px;
-    margin-bottom: 15px;
-    box-sizing: border-box;
-  }
-  
-  .feedback-form button {
-    background-color: #0077be;
-    color: white;
-    padding: 15px 20px;
-    border: none;
-    cursor: pointer;
-    border-radius: 5px;
-    font-size: 16px;
-  }
-  
-  .feedback-form button:hover {
-    background-color: #06517c;
-  }
-  
+}
