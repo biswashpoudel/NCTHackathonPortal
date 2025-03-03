@@ -28,9 +28,8 @@ const AuthPage = ({ isLogin: propIsLogin }) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
 
-    // Validate username for industry level rules
     if (name === "username") {
-      // Check if username matches the pattern
+      
       const usernamePattern = /^[a-zA-Z0-9]([a-zA-Z0-9_-]{1,18}[a-zA-Z0-9])?$/;
       
       if (!usernamePattern.test(value)) {

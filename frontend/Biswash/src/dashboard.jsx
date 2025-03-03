@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { 
@@ -16,6 +16,7 @@ import {
   FaUsers,
   FaUserPlus
 } from "react-icons/fa";
+import { MdGroupAdd } from "react-icons/md";
 import { HiUserGroup } from "react-icons/hi2";
 import "./dashboard.css"; 
 
@@ -25,12 +26,14 @@ const Dashboard = () => {
   const queryParams = new URLSearchParams(location.search);
   const username = queryParams.get("username");
 
+
   const [activeTab, setActiveTab] = useState("hackathons");
   const [submissions, setSubmissions] = useState([]);
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [navbarIcon, setnavbarIconOpen] = useState(false);
   const [isParticipating, setIsParticipating] = useState(false);
   const [participationLoading, setParticipationLoading] = useState(false);
   const [participants, setParticipants] = useState([]);
@@ -44,6 +47,11 @@ const Dashboard = () => {
   });
   const [showParticipantsList, setShowParticipantsList] = useState(false);
   const [existingGroupMembers, setExistingGroupMembers] = useState([]);
+
+  const dropdownRef = useRef(null);
+  const sidebarRef = useRef(null);
+
+  
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -67,7 +75,7 @@ const Dashboard = () => {
     fetchUserGroups();
   }, [username, navigate]);
 
-  // Get all existing group members to prevent duplicate additions
+  
   useEffect(() => {
     if (groups.length > 0) {
       const allGroupMembers = new Set();
@@ -79,6 +87,23 @@ const Dashboard = () => {
       setExistingGroupMembers(Array.from(allGroupMembers));
     }
   }, [groups]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowProfileDropdown(false);
+      }
+      if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
+        setSidebarOpen(false);
+      }
+
+    };
+  
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const fetchSubmissions = async () => {
     try {
@@ -153,6 +178,11 @@ const Dashboard = () => {
       alert("Maximum 5 members allowed per group");
       return;
     }
+
+    if (userGroups.length > 0) {
+      alert("You can only create one group.");
+      return;
+    }
     
     try {
       const members = [...newGroup.members, username];
@@ -191,7 +221,6 @@ const Dashboard = () => {
     setShowParticipantsList(!showParticipantsList);
   };
 
-  // Check if a user is already in any group
   const isUserInAnyGroup = (username) => {
     return existingGroupMembers.includes(username);
   };
@@ -231,6 +260,7 @@ const Dashboard = () => {
       });
       setFile(null);
       fetchSubmissions();
+      alert("File submitted successfully!");
     } catch (err) {
       alert("Upload failed. Please try again.");
       console.error("Upload error:", err);
@@ -260,14 +290,14 @@ const Dashboard = () => {
     <div className="dashboard-wrapper">
       <div className="dashboard-navbar">
         <div className="dashboard-navbar-left">
-          <button className="dashboard-menu-toggle" onClick={toggleSidebar}>
+          <button className="dashboard-menu-toggle" onClick={toggleSidebar} ref={sidebarRef}>
             <FaBars />
           </button>
           <h2 className="dashboard-greeting">Hi, {username}</h2>
         </div>
        
-        <div className="dashboard-profile-container">
-          <div className="dashboard-profile-icon" onClick={toggleProfileDropdown}>
+        <div className="dashboard-profile-container" ref={dropdownRef}>
+          <div className="dashboard-profile-icon" onClick={toggleProfileDropdown} >
             {username ? username.charAt(0).toUpperCase() : "U"}
           </div>
           
@@ -283,10 +313,11 @@ const Dashboard = () => {
                   <FaCog className="dashboard-dropdown-icon" /> 
                   Settings
                 </li>
-                <li onClick={handleLogout}>
-                  <FaSignOutAlt className="dashboard-dropdown-icon" /> 
+                <li onClick={handleLogout} style={{ color: 'red' }}>
+                 <FaSignOutAlt style={{ color: 'red' }} className="dashboard-dropdown-icon" /> 
                   Logout
                 </li>
+
               </ul>
             </div>
           )}
@@ -294,7 +325,7 @@ const Dashboard = () => {
       </div>
 
       <div className="dashboard-main">
-        <div className={`dashboard-sidebar ${sidebarOpen ? "open" : "closed"}`}>
+        <div className={`dashboard-sidebar ${sidebarOpen ? "open" : "closed"}`} ref={sidebarRef}>
           <button 
             className="dashboard-sidebar-toggle" 
             onClick={toggleSidebar}
@@ -380,7 +411,7 @@ const Dashboard = () => {
                       <div className="dashboard-groups-list">
                         {userGroups.map(group => (
                           <div key={group._id} className="dashboard-group-card">
-                            <h3>{group.name}</h3>
+                            <h3> Group Name: {group.name}</h3>
                             <p>{group.description}</p>
                             <div className="dashboard-group-members">
                               <h4>Members:</h4>
@@ -400,6 +431,7 @@ const Dashboard = () => {
                     <div className="dashboard-section-header">
                       <h2>Create New Group</h2>
                     </div>
+                    <br></br>
                     <form onSubmit={handleCreateGroup} className="dashboard-form">
                       <div className="dashboard-form-group">
                         <label>Group Name:</label>
@@ -474,7 +506,6 @@ const Dashboard = () => {
                                     className="dashboard-remove-member"
                                     onClick={() => handleAddMember(member)}
                                   >
-                                    ×
                                   </button>
                                 </li>
                               ))}
@@ -486,7 +517,7 @@ const Dashboard = () => {
                         className="dashboard-button" 
                         type="submit"
                       >
-                        <FaUserPlus className="dashboard-button-icon" /> 
+                        <MdGroupAdd className="dashboard-button-icon" /> 
                         Create Group
                       </button>
                     </form>
@@ -575,6 +606,10 @@ const Dashboard = () => {
                             Uploaded by: <b>{submission.uploadedBy}</b>
                             <br />
                             Group: <b>{submission.groupName || "N/A"}</b>
+                            <br />
+                            Current Grade: <b>{submission.grade} </b>
+                            <br />
+                            Current Feedback: <b>{submission.feedback}</b>
                           </p>
                         </div>
                         <a

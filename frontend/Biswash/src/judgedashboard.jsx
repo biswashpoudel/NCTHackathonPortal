@@ -15,7 +15,8 @@ import {
   FaChevronRight,
   FaDownload,
 } from "react-icons/fa";
-import "./judgedashboard.css"
+import "./judgedashboard.css";
+
 const JudgeDashboard = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -24,9 +25,14 @@ const JudgeDashboard = () => {
 
   const [activeTab, setActiveTab] = useState("judgeSubmissions");
   const [submissions, setSubmissions] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+
+  // Base URL for API endpoints
+  const API_BASE_URL = "https://ncthackathonportal.onrender.com";
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -47,11 +53,15 @@ const JudgeDashboard = () => {
 
   const fetchAllSubmissions = async () => {
     try {
-      const res = await axios.get("https://ncthackathonportal.onrender.com/submissions");
+      setLoading(true);
+      // Using the api/submissions endpoint from your server.js which returns all submissions
+      const res = await axios.get(`${API_BASE_URL}/api/submissions`);
       setSubmissions(res.data);
+      setLoading(false);
     } catch (err) {
       console.error("Error fetching submissions", err);
-      alert("Failed to load submissions. Please try again.");
+      setError("Failed to load submissions. Please try again.");
+      setLoading(false);
     }
   };
 
@@ -70,7 +80,7 @@ const JudgeDashboard = () => {
 
   const handleGradeChange = (submissionId, grade) => {
     const updatedSubmissions = submissions.map((submission) =>
-      submission._id === submissionId ? { ...submission, grade } : submission
+      submission._id === submissionId ? { ...submission, grade: Number(grade) } : submission
     );
     setSubmissions(updatedSubmissions);
   };
@@ -84,26 +94,53 @@ const JudgeDashboard = () => {
 
   const submitGradeAndFeedback = async (submissionId) => {
     const submission = submissions.find((sub) => sub._id === submissionId);
-    if (!submission.grade || !submission.feedback) {
-      alert("Please provide both grade and feedback.");
+    
+    // Validate inputs
+    if (!submission.grade && submission.grade !== 0) {
+      setError("Please provide a grade (0-100).");
+      return;
+    }
+    
+    if (!submission.feedback || submission.feedback.trim() === "") {
+      setError("Please provide feedback.");
+      return;
+    }
+    
+    if (submission.grade < 0 || submission.grade > 100) {
+      setError("Grade must be between 0 and 100.");
       return;
     }
 
     try {
-      await axios.post("https://ncthackathonportal.onrender.com/submit-grade", {
+      // Using the submit-feedback endpoint from your server.js
+      await axios.post(`${API_BASE_URL}/submit-feedback`, {
         submissionId,
         grade: submission.grade,
         feedback: submission.feedback,
       });
-      alert("Grade and feedback submitted successfully!");
+      
+      setSuccessMessage("Grade and feedback submitted successfully!");
+      setError(null);
+      
+      // Auto-clear success message after 3 seconds
+      setTimeout(() => {
+        setSuccessMessage("");
+      }, 3000);
+      
+      // Refresh submissions to get updated data
+      fetchAllSubmissions();
     } catch (err) {
       console.error("Error submitting grade and feedback", err);
-      alert("Failed to submit. Please try again.");
+      setError("Failed to submit. Please try again.");
     }
   };
 
+  const handleDownload = (filename) => {
+    window.open(`${API_BASE_URL}/download/${filename}`, '_blank');
+  };
+
   const menuItems = [
-    { id: "judgeSubmissions", label: "Judge Submissions", icon: <FaLaptopCode /> },
+    { id: "judgeSubmissions", label: "View Submissions", icon: <FaLaptopCode /> },
     { id: "leaderboard", label: "Leaderboard", icon: <FaTrophy /> },
     { id: "discussion", label: "Discussion", icon: <FaComments /> },
     { id: "notifications", label: "Notifications", icon: <FaBell /> },
@@ -116,7 +153,7 @@ const JudgeDashboard = () => {
           <button className="dashboard-menu-toggle" onClick={toggleSidebar}>
             <FaBars />
           </button>
-          <h2 className="dashboard-greeting">Hi, Judge {username}</h2>
+          <h2 className="dashboard-greeting">Hi, {username}</h2>
         </div>
 
         <div className="dashboard-profile-container">
@@ -172,21 +209,49 @@ const JudgeDashboard = () => {
               <div className="dashboard-section-header">
                 <h2>All Submissions</h2>
               </div>
+              
+              {/* Show error messages */}
+              {error && (
+                <div className="dashboard-error-message">
+                  {error}
+                </div>
+              )}
+              
+              {/* Show success messages */}
+              {successMessage && (
+                <div className="dashboard-success-message">
+                  {successMessage}
+                </div>
+              )}
+              
               <div className="dashboard-section-body">
-                {submissions.length > 0 ? (
+                {loading ? (
+                  <p className="dashboard-loading">Loading submissions...</p>
+                ) : submissions.length > 0 ? (
                   submissions.map((submission) => (
                     <div key={submission._id} className="dashboard-submission-item">
                       <div className="dashboard-submission-info">
                         <h3>{submission.filename}</h3>
                         <p>Uploaded by: <b>{submission.uploadedBy}</b></p>
+                        <p>Group: <b>{submission.groupName}</b></p>
+                        <p>Date: <b>{new Date(submission.date).toLocaleString()}</b></p>
+                        
+                        {/* Display existing grade and feedback if available */}
+                        {submission.grade !== null && (
+                          <div className="dashboard-existing-feedback">
+                            <p>Current Grade: <b>{submission.grade}</b></p>
+                            <p>Current Feedback: <b>{submission.feedback}</b></p>
+                          </div>
+                        )}
                       </div>
-                      <a
-                        href={`https://ncthackathonportal.onrender.com/${submission.filename}`}
-                        download
+                      
+                      <button
+                        onClick={() => handleDownload(submission.filename)}
                         className="dashboard-view-button"
                       >
                         <FaDownload /> Download
-                      </a>
+                      </button>
+                      
                       <div className="dashboard-grade-feedback">
                         <input
                           type="number"
