@@ -66,27 +66,29 @@ const AdminDashboard = () => {
     }
   };
 
-  // Approve participation request
-  const approveParticipation = async (username) => {
-    try {
-      await axios.put("https://ncthackathonportal.onrender.com/approve-participation", { username, isApproved: true });
-      alert(`Participation request for ${username} approved.`);
-      fetchPendingParticipations(); // Refresh pending requests list
-    } catch (err) {
-      console.error('Error approving participation', err);
-    }
-  };
+// Approve participation request
+const approveParticipation = async (username) => {
+  try {
+    await axios.post("https://ncthackathonportal.onrender.com/approve-participation", { username });
+    alert(`Participation request for ${username} approved.`);
+    fetchPendingParticipations(); // Refresh pending requests list
+  } catch (err) {
+    console.error('Error approving participation', err);
+    alert('Error approving participation');
+  }
+};
 
-  // Reject participation request
-  const rejectParticipation = async (username) => {
-    try {
-      await axios.put("https://ncthackathonportal.onrender.com/approve-participation", { username, isApproved: false });
-      alert(`Participation request for ${username} rejected.`);
-      fetchPendingParticipations(); // Refresh pending requests list
-    } catch (err) {
-      console.error('Error rejecting participation', err);
-    }
-  };
+// Reject participation request
+const rejectParticipation = async (username) => {
+  try {
+    await axios.post("https://ncthackathonportal.onrender.com/approve-participation", { username, isApproved: false });
+    alert(`Participation request for ${username} rejected.`);
+    fetchPendingParticipations(); // Refresh pending requests list
+  } catch (err) {
+    console.error('Error rejecting participation', err);
+    alert('Error rejecting participation');
+  }
+};
 
   // Approve group creation request
   const approveGroup = async (groupId) => {
