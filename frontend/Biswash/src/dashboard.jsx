@@ -123,12 +123,17 @@ const Dashboard = () => {
     try {
       const res = await axios.get(`https://ncthackathonportal.onrender.com/participants`);
       const participant = res.data.find(p => p.username === username);
-      setIsParticipating(!!participant);
+      if (participant && participant.isApproved) {
+        setIsParticipating(true);
+      } else {
+        setIsParticipating(false);
+      }
       setParticipants(res.data);
     } catch (err) {
       console.error("Error checking participation status", err);
     }
   };
+  
 
   const fetchGroups = async () => {
     try {
@@ -154,6 +159,14 @@ const Dashboard = () => {
   const handleParticipate = async () => {
     setParticipationLoading(true);
     try {
+      const res = await axios.get(`https://ncthackathonportal.onrender.com/participants?username=${username}`);
+      const participant = res.data.find(p => p.username === username);
+  
+      if (participant && !participant.isApproved) {
+        alert("You are not approved for participation yet.");
+        return;
+      }
+  
       await axios.post("https://ncthackathonportal.onrender.com/participate", {
         username
       });
@@ -167,33 +180,40 @@ const Dashboard = () => {
     }
   };
 
+  const isGroupApproved = (group) => {
+    return group.pendingApproval === false; // Checks if the group is approved
+  };
+  
+
   const handleCreateGroup = async (e) => {
     e.preventDefault();
     if (!newGroup.name || !newGroup.description) {
       alert("Group name and description are required");
       return;
     }
-    
+  
     if (newGroup.members.length > 4) { // +1 for current user = 5 max
       alert("Maximum 5 members allowed per group");
       return;
     }
-
+  
     if (userGroups.length > 0) {
       alert("You can only create one group.");
       return;
     }
-    
+  
     try {
       const members = [...newGroup.members, username];
+      // Create the group with "pendingApproval" set to true
       await axios.post("https://ncthackathonportal.onrender.com/groups", {
         name: newGroup.name,
         description: newGroup.description,
         members,
-        createdBy: username
+        createdBy: username,
+        pendingApproval: true // Add pendingApproval to track group approval
       });
-      
-      alert("Group created successfully!");
+  
+      alert("Group created successfully! Awaiting admin approval.");
       setNewGroup({ name: "", description: "", members: [] });
       fetchGroups();
       fetchUserGroups();
@@ -202,20 +222,26 @@ const Dashboard = () => {
       alert(`Failed to create group: ${err.response?.data?.message || "Unknown error"}`);
     }
   };
+  
+const handleAddMember = (member) => {
+  if (!isGroupApproved(selectedGroup)) {
+    alert("Group is awaiting approval. You cannot add members at this time.");
+    return;
+  }
+  // Add member to group logic here
+  if (newGroup.members.includes(member)) {
+    setNewGroup({
+      ...newGroup,
+      members: newGroup.members.filter(m => m !== member)
+    });
+  } else {
+    setNewGroup({
+      ...newGroup,
+      members: [...newGroup.members, member]
+    });
+  }
+};
 
-  const handleAddMember = (member) => {
-    if (newGroup.members.includes(member)) {
-      setNewGroup({
-        ...newGroup,
-        members: newGroup.members.filter(m => m !== member)
-      });
-    } else {
-      setNewGroup({
-        ...newGroup,
-        members: [...newGroup.members, member]
-      });
-    }
-  };
 
   const toggleParticipantsList = () => {
     setShowParticipantsList(!showParticipantsList);
@@ -407,26 +433,28 @@ const Dashboard = () => {
                   </div>
                 ) : (
                   <>
-                    {userGroups.length > 0 ? (
-                      <div className="dashboard-groups-list">
-                        {userGroups.map(group => (
-                          <div key={group._id} className="dashboard-group-card">
-                            <h3> Group Name: {group.name}</h3>
-                            <p>{group.description}</p>
-                            <div className="dashboard-group-members">
-                              <h4>Members:</h4>
-                              <ul>
-                                {group.members.map(member => (
-                                  <li key={member}>{member}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="dashboard-empty-state">You haven't joined any groups yet.</p>
-                    )}
+                   {userGroups.length > 0 ? (
+  <div className="dashboard-groups-list">
+    {userGroups.map(group => (
+      <div key={group._id} className="dashboard-group-card">
+        <h3> Group Name: {group.name}</h3>
+        <p>{group.description}</p>
+        {group.pendingApproval && <p className="dashboard-pending">Pending Approval</p>}
+        <div className="dashboard-group-members">
+          <h4>Members:</h4>
+          <ul>
+            {group.members.map(member => (
+              <li key={member}>{member}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    ))}
+  </div>
+) : (
+  <p className="dashboard-empty-state">You haven't joined any groups yet.</p>
+)}
+
 
                     <div className="dashboard-section-header">
                       <h2>Create New Group</h2>
@@ -607,9 +635,9 @@ const Dashboard = () => {
                             <br />
                             Group: <b>{submission.groupName || "N/A"}</b>
                             <br />
-                            Grade: <b>{submission.grade} </b>
+                            {/* Grade: <b>{submission.grade} </b>
                             <br />
-                            Feedback: <b>{submission.feedback}</b>
+                            Feedback: <b>{submission.feedback}</b> */}
                           </p>
                         </div>
                         <a

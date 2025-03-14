@@ -29,7 +29,9 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   role: { type: String, required: true, enum: ["user", "judge", "mentor", "admin"], default: "user" },
   isParticipating: { type: Boolean, default: false },
+  isApproved: { type: Boolean, default: false }, 
 });
+
 const User = mongoose.model("User", userSchema);
 
 // Group Schema
@@ -39,7 +41,9 @@ const groupSchema = new mongoose.Schema({
   members: [{ type: String }], // Array of usernames
   createdBy: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
+  pendingApproval: { type: Boolean, default: true }, // New field to track if group is awaiting admin approval
 });
+
 const Group = mongoose.model("Group", groupSchema);
 
 // Submission Schema
@@ -105,19 +109,27 @@ app.post("/participate", async (req, res) => {
   const { username } = req.body;
   
   try {
-    const user = await User.findOneAndUpdate(
+    // Check if user is approved by admin
+    const user = await User.findOne({ username });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (!user.isApproved) {
+      return res.status(403).json({ message: "Your participation is awaiting admin approval." });
+    }
+
+    // If approved, proceed with participation
+    const updatedUser = await User.findOneAndUpdate(
       { username },
       { isParticipating: true },
       { new: true }
     );
-    
-    if (!user) return res.status(404).json({ message: "User not found" });
-    
-    res.status(200).json({ message: "Successfully registered for hackathon", user });
+
+    res.status(200).json({ message: "Successfully registered for hackathon", user: updatedUser });
   } catch (error) {
     res.status(500).json({ message: "Error updating participation status", error });
   }
 });
+
 
 // Get All Participating Users
 app.get("/participants", async (req, res) => {
@@ -144,11 +156,60 @@ app.post("/groups", async (req, res) => {
     const newGroup = new Group({ name, description, members, createdBy });
     await newGroup.save();
     
-    res.status(201).json({ message: "Group created successfully", group: newGroup });
+    res.status(201).json({ message: "Group created successfully and awaiting admin approval", group: newGroup });
   } catch (error) {
     res.status(500).json({ message: "Error creating group", error });
   }
 });
+ 
+// Approve participation 
+app.post("/approve-participation", async (req, res) => {
+  const { username } = req.body;
+
+  try {
+    // Check if admin role exists
+    const adminUser = await User.findOne({ role: "admin" });
+    if (!adminUser) return res.status(403).json({ message: "Admin not found" });
+
+    // Find and approve user participation
+    const user = await User.findOneAndUpdate(
+      { username },
+      { isApproved: true },
+      { new: true }
+    );
+    
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    res.status(200).json({ message: "User approved for participation", user });
+  } catch (error) {
+    res.status(500).json({ message: "Error approving participation", error });
+  }
+});
+
+// Approve Group Creation 
+app.post("/approve-group", async (req, res) => {
+  const { groupId } = req.body;
+
+  try {
+    // Check if admin role exists
+    const adminUser = await User.findOne({ role: "admin" });
+    if (!adminUser) return res.status(403).json({ message: "Admin not found" });
+
+    // Approve the group
+    const group = await Group.findByIdAndUpdate(
+      groupId,
+      { pendingApproval: false },
+      { new: true }
+    );
+
+    if (!group) return res.status(404).json({ message: "Group not found" });
+
+    res.status(200).json({ message: "Group approved successfully", group });
+  } catch (error) {
+    res.status(500).json({ message: "Error approving group", error });
+  }
+});
+
 
 // Get All Groups
 app.get("/groups", async (req, res) => {
