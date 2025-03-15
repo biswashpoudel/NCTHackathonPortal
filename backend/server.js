@@ -375,7 +375,104 @@ app.get("/download/:filename", (req, res) => {
   }
 })
 
+// Get Leaderboard Status
+app.get("/leaderboard-status", async (req, res) => {
+  try {
+    // Check if there's a leaderboard status document in the database
+    // You might want to create a new model for this
+    const status = await LeaderboardStatus.findOne();
+    
+    if (!status) {
+      // If no status exists, create one with published: false
+      const newStatus = new LeaderboardStatus({ published: false });
+      await newStatus.save();
+      return res.status(200).json({ published: false });
+    }
+    
+    res.status(200).json({ published: status.published });
+  } catch (error) {
+    res.status(500).json({ message: "Error checking leaderboard status", error });
+  }
+});
+
+// Publish Leaderboard
+app.post("/publish-leaderboard", async (req, res) => {
+  try {
+    // Update the leaderboard status to published
+    const status = await LeaderboardStatus.findOne();
+    
+    if (status) {
+      status.published = true;
+      await status.save();
+    } else {
+      const newStatus = new LeaderboardStatus({ published: true });
+      await newStatus.save();
+    }
+    
+    res.status(200).json({ message: "Leaderboard published successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Error publishing leaderboard", error });
+  }
+});
+
+// Get Leaderboard
+app.get("/leaderboard", async (req, res) => {
+  try {
+    // Check if leaderboard is published
+    const status = await LeaderboardStatus.findOne();
+    
+    if (!status || !status.published) {
+      return res.status(403).json({ message: "Leaderboard has not been published yet" });
+    }
+    
+    // Get all submissions with grades
+    const submissions = await Submission.find({ grade: { $ne: null } });
+    
+    // Group submissions by group and calculate average grade
+    const groupScores = {};
+    
+    for (const submission of submissions) {
+      if (!groupScores[submission.groupName]) {
+        // Find the group to get members
+        const group = await Group.findOne({ name: submission.groupName });
+        
+        groupScores[submission.groupName] = {
+          groupName: submission.groupName,
+          members: group ? group.members : [],
+          totalGrade: submission.grade,
+          count: 1
+        };
+      } else {
+        groupScores[submission.groupName].totalGrade += submission.grade;
+        groupScores[submission.groupName].count += 1;
+      }
+    }
+    
+    // Calculate average grade for each group
+    const leaderboard = Object.values(groupScores).map(group => ({
+      _id: group.groupName,
+      groupName: group.groupName,
+      members: group.members,
+      grade: Math.round(group.totalGrade / group.count)
+    }));
+    
+    // Sort by grade (highest first)
+    leaderboard.sort((a, b) => b.grade - a.grade);
+    
+    res.status(200).json(leaderboard);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching leaderboard", error });
+  }
+});
+
+// Leaderboard Status Schema
+const leaderboardStatusSchema = new mongoose.Schema({
+  published: { type: Boolean, default: false },
+  publishedAt: { type: Date, default: Date.now }
+});
+
+const LeaderboardStatus = mongoose.model("LeaderboardStatus", leaderboardStatusSchema);
+
 // Start Server
 const PORT = process.env.PORT || 5000
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`))
-

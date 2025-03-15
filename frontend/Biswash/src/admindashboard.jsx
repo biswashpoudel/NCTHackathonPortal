@@ -12,8 +12,9 @@ import {
   FaUsersCog,
   FaSignOutAlt,
   FaBars,
+  FaMedal,
 } from "react-icons/fa"
-import "./admindashboard.css" // You'll need to create this CSS file
+import "./admindashboard.css" 
 
 const AdminDashboard = () => {
   const location = useLocation()
@@ -29,6 +30,8 @@ const AdminDashboard = () => {
   const [submissions, setSubmissions] = useState([])
   const [loading, setLoading] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [leaderboard, setLeaderboard] = useState([])
+  const [leaderboardPublished, setLeaderboardPublished] = useState(false)
 
   useEffect(() => {
     if (!username) {
@@ -41,6 +44,7 @@ const AdminDashboard = () => {
     fetchApprovedUsers()
     fetchApprovedGroups()
     fetchSubmissions()
+    fetchLeaderboard()
   }, [username, navigate])
 
   const fetchPendingUsers = async () => {
@@ -85,6 +89,20 @@ const AdminDashboard = () => {
       setSubmissions(res.data)
     } catch (err) {
       console.error("Error fetching submissions", err)
+    }
+  }
+
+  const fetchLeaderboard = async () => {
+    setLoading(true)
+    try {
+      const res = await axios.get("https://ncthackathonportal.onrender.com/api/leaderboard")
+      setLeaderboard(res.data)
+      setLeaderboardPublished(true) // Assuming leaderboard is published if data exists
+    } catch (err) {
+      console.error("Error fetching leaderboard", err)
+      setLeaderboardPublished(false)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -177,6 +195,7 @@ const AdminDashboard = () => {
     { id: "approved-users", label: "Approved Users", icon: <FaUserCheck /> },
     { id: "approved-groups", label: "Approved Groups", icon: <FaUsersCog /> },
     { id: "submissions", label: "Submissions", icon: <FaFileAlt /> },
+    { id: "leaderboard", label: "Leaderboard", icon: <FaMedal /> },
   ]
 
   return (
@@ -446,6 +465,47 @@ const AdminDashboard = () => {
                   </div>
                 ) : (
                   <p className="admin-dashboard-empty-state">No submissions yet.</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === "leaderboard" && (
+            <div className="admin-dashboard-section">
+              <div className="admin-dashboard-section-header">
+                <h2>Leaderboard</h2>
+              </div>
+              <div className="admin-dashboard-section-body">
+                {loading ? (
+                  <p className="admin-dashboard-loading">Loading leaderboard...</p>
+                ) : leaderboard.length > 0 ? (
+                  <div className="admin-dashboard-leaderboard">
+                    <div className="admin-dashboard-leaderboard-header">
+                      <div className="admin-dashboard-leaderboard-rank">Rank</div>
+                      <div className="admin-dashboard-leaderboard-group">Group</div>
+                      <div className="admin-dashboard-leaderboard-members">Members</div>
+                      <div className="admin-dashboard-leaderboard-score">Score</div>
+                    </div>
+                    {leaderboard.map((entry, index) => (
+                      <div
+                        key={entry._id}
+                        className={`admin-dashboard-leaderboard-row ${index < 3 ? `top-${index + 1}` : ""}`}
+                      >
+                        <div className="admin-dashboard-leaderboard-rank">
+                          {index < 3 ? <FaMedal className={`medal-${index + 1}`} /> : index + 1}
+                        </div>
+                        <div className="admin-dashboard-leaderboard-group">{entry.groupName}</div>
+                        <div className="admin-dashboard-leaderboard-members">{entry.members.join(", ")}</div>
+                        <div className="admin-dashboard-leaderboard-score">{entry.grade}</div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="admin-dashboard-empty-state">
+                    {leaderboardPublished
+                      ? "No leaderboard data available yet."
+                      : "The leaderboard has not been published yet."}
+                  </p>
                 )}
               </div>
             </div>

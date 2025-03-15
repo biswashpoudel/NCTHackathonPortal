@@ -14,6 +14,9 @@ import {
   FaChevronLeft,
   FaChevronRight,
   FaDownload,
+  FaCheck,
+  FaMedal,
+  FaGlobe,
 } from "react-icons/fa";
 import "./judgedashboard.css";
 
@@ -25,11 +28,14 @@ const JudgeDashboard = () => {
 
   const [activeTab, setActiveTab] = useState("judgeSubmissions");
   const [submissions, setSubmissions] = useState([]);
+  const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [publishLoading, setPublishLoading] = useState(false);
+  const [leaderboardPublished, setLeaderboardPublished] = useState(false);
 
   // Base URL for API endpoints
   const API_BASE_URL = "https://ncthackathonportal.onrender.com";
@@ -49,7 +55,14 @@ const JudgeDashboard = () => {
       return;
     }
     fetchAllSubmissions();
+    checkLeaderboardStatus();
   }, [username, navigate]);
+
+  useEffect(() => {
+    if (activeTab === "leaderboard") {
+      fetchLeaderboard();
+    }
+  }, [activeTab]);
 
   const fetchAllSubmissions = async () => {
     try {
@@ -61,6 +74,29 @@ const JudgeDashboard = () => {
     } catch (err) {
       console.error("Error fetching submissions", err);
       setError("Failed to load submissions. Please try again.");
+      setLoading(false);
+    }
+  };
+
+  const checkLeaderboardStatus = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/leaderboard-status`);
+      setLeaderboardPublished(res.data.published);
+    } catch (err) {
+      console.error("Error checking leaderboard status", err);
+      setLeaderboardPublished(false);
+    }
+  };
+
+  const fetchLeaderboard = async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get(`${API_BASE_URL}/leaderboard`);
+      setLeaderboard(res.data);
+      setLoading(false);
+    } catch (err) {
+      console.error("Error fetching leaderboard", err);
+      setError("Failed to load leaderboard. Please try again.");
       setLoading(false);
     }
   };
@@ -139,6 +175,35 @@ const JudgeDashboard = () => {
     window.open(`${API_BASE_URL}/download/${filename}`, '_blank');
   };
 
+  const publishLeaderboard = async () => {
+    // Check if all submissions have been graded
+    const ungradedSubmissions = submissions.filter(sub => sub.grade === null || sub.grade === undefined);
+    
+    if (ungradedSubmissions.length > 0) {
+      setError(`There are ${ungradedSubmissions.length} ungraded submissions. Please grade all submissions before publishing.`);
+      return;
+    }
+
+    try {
+      setPublishLoading(true);
+      await axios.post(`${API_BASE_URL}/publish-leaderboard`);
+      setLeaderboardPublished(true);
+      setSuccessMessage("Leaderboard published successfully! All participants can now view the results.");
+      setError(null);
+      
+      // Auto-clear success message after 3 seconds
+      setTimeout(() => {
+        setSuccessMessage("");
+      }, 3000);
+      
+      setPublishLoading(false);
+    } catch (err) {
+      console.error("Error publishing leaderboard", err);
+      setError("Failed to publish leaderboard. Please try again.");
+      setPublishLoading(false);
+    }
+  };
+
   const menuItems = [
     { id: "judgeSubmissions", label: "View Submissions", icon: <FaLaptopCode /> },
     { id: "leaderboard", label: "Leaderboard", icon: <FaTrophy /> },
@@ -208,6 +273,25 @@ const JudgeDashboard = () => {
             <div className="dashboard-section">
               <div className="dashboard-section-header">
                 <h2>All Submissions</h2>
+                <div className="dashboard-header-actions">
+                  <button 
+                    className={`dashboard-publish-button ${leaderboardPublished ? 'published' : ''}`}
+                    onClick={publishLeaderboard}
+                    disabled={publishLoading || leaderboardPublished}
+                  >
+                    {publishLoading ? (
+                      "Publishing..."
+                    ) : leaderboardPublished ? (
+                      <>
+                        <FaCheck className="dashboard-button-icon" /> Published
+                      </>
+                    ) : (
+                      <>
+                        <FaGlobe className="dashboard-button-icon" /> Publish Leaderboard
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
               
               {/* Show error messages */}
@@ -288,7 +372,50 @@ const JudgeDashboard = () => {
                 <h2>Leaderboard</h2>
               </div>
               <div className="dashboard-section-body">
-                <p className="dashboard-empty-state">Top participants will be displayed here.</p>
+                {!leaderboardPublished ? (
+                  <div className="dashboard-notice">
+                    <p>The leaderboard has not been published yet.</p>
+                    {submissions.some(sub => sub.grade !== null) && (
+                      <button 
+                        className="dashboard-button"
+                        onClick={publishLeaderboard}
+                        disabled={publishLoading}
+                      >
+                        {publishLoading ? "Publishing..." : "Publish Leaderboard"}
+                      </button>
+                    )}
+                  </div>
+                ) : loading ? (
+                  <p className="dashboard-loading">Loading leaderboard...</p>
+                ) : leaderboard.length > 0 ? (
+                  <div className="dashboard-leaderboard">
+                    <div className="dashboard-leaderboard-header">
+                      <div className="dashboard-leaderboard-rank">Rank</div>
+                      <div className="dashboard-leaderboard-group">Group</div>
+                      <div className="dashboard-leaderboard-members">Members</div>
+                      <div className="dashboard-leaderboard-score">Score</div>
+                    </div>
+                    {leaderboard.map((entry, index) => (
+                      <div 
+                        key={entry._id} 
+                        className={`dashboard-leaderboard-row ${index < 3 ? `top-${index + 1}` : ""}`}
+                      >
+                        <div className="dashboard-leaderboard-rank">
+                          {index < 3 ? (
+                            <FaMedal className={`medal-${index + 1}`} />
+                          ) : (
+                            index + 1
+                          )}
+                        </div>
+                        <div className="dashboard-leaderboard-group">{entry.groupName}</div>
+                        <div className="dashboard-leaderboard-members">{entry.members.join(", ")}</div>
+                        <div className="dashboard-leaderboard-score">{entry.grade}</div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="dashboard-empty-state">No leaderboard data available.</p>
+                )}
               </div>
             </div>
           )}

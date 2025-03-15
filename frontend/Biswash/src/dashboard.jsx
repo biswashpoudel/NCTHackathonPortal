@@ -17,6 +17,7 @@ import {
   FaChevronRight,
   FaUsers,
   FaHourglassHalf,
+  FaMedal,
 } from "react-icons/fa"
 import { MdGroupAdd } from "react-icons/md"
 import { HiUserGroup } from "react-icons/hi2"
@@ -47,6 +48,8 @@ const Dashboard = () => {
   })
   const [showParticipantsList, setShowParticipantsList] = useState(false)
   const [existingGroupMembers, setExistingGroupMembers] = useState([])
+  const [leaderboard, setLeaderboard] = useState([])
+  const [leaderboardPublished, setLeaderboardPublished] = useState(false)
 
   const dropdownRef = useRef(null)
   const sidebarRef = useRef(null)
@@ -71,6 +74,7 @@ const Dashboard = () => {
     checkParticipationStatus()
     fetchGroups()
     fetchUserGroups()
+    fetchLeaderboard()
   }, [username, navigate])
 
   useEffect(() => {
@@ -159,6 +163,20 @@ const Dashboard = () => {
       }
     } catch (err) {
       console.error("Error fetching user groups", err)
+    }
+  }
+
+  const fetchLeaderboard = async () => {
+    setLoading(true)
+    try {
+      const leaderboardRes = await axios.get("https://ncthackathonportal.onrender.com/leaderboard")
+      setLeaderboard(leaderboardRes.data)
+      setLeaderboardPublished(true)
+    } catch (error) {
+      console.error("Error fetching leaderboard:", error)
+      setLeaderboardPublished(false)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -667,7 +685,41 @@ const Dashboard = () => {
                 <h2>Leaderboard</h2>
               </div>
               <div className="dashboard-section-body">
-                <p className="dashboard-empty-state">Top participants will be displayed here.</p>
+                {loading ? (
+                  <p className="dashboard-loading">Loading leaderboard...</p>
+                ) : leaderboard.length > 0 ? (
+                  <div className="dashboard-leaderboard">
+                    <div className="dashboard-leaderboard-header">
+                      <div className="dashboard-leaderboard-rank">Rank</div>
+                      <div className="dashboard-leaderboard-group">Group</div>
+                      <div className="dashboard-leaderboard-members">Members</div>
+                      <div className="dashboard-leaderboard-score">Score</div>
+                    </div>
+                    {leaderboard.map((entry, index) => (
+                      <div
+                        key={entry._id}
+                        className={`dashboard-leaderboard-row ${index < 3 ? `top-${index + 1}` : ""}`}
+                      >
+                        <div className="dashboard-leaderboard-rank">
+                          {index < 3 ? (
+                            <FaMedal className={`medal-${index + 1}`} />
+                          ) : (
+                            index + 1
+                          )}
+                        </div>
+                        <div className="dashboard-leaderboard-group">{entry.groupName}</div>
+                        <div className="dashboard-leaderboard-members">{entry.members.join(", ")}</div>
+                        <div className="dashboard-leaderboard-score">{entry.grade}</div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="dashboard-empty-state">
+                    {leaderboardPublished ?
+                      "No leaderboard data available yet." :
+                      "The leaderboard has not been published yet."}
+                  </p>
+                )}
               </div>
             </div>
           )}
@@ -700,4 +752,3 @@ const Dashboard = () => {
 }
 
 export default Dashboard
-
