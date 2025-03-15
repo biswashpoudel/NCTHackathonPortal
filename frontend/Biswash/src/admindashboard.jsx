@@ -58,7 +58,7 @@ const AdminDashboard = () => {
     setErrorMessage("");
     try {
       await axios.post("https://ncthackathonportal.onrender.com/register", formData);
-      alert("User registered successfully!");
+      alert("User  registered successfully!");
       fetchUsers();
       setFormData({ username: "", email: "", password: "", role: "user" });
     } catch (err) {
@@ -66,34 +66,35 @@ const AdminDashboard = () => {
     }
   };
 
-// Approve participation request
-const approveParticipation = async (username) => {
-  try {
-    await axios.post("https://ncthackathonportal.onrender.com/approve-participation", { username });
-    alert(`Participation request for ${username} approved.`);
-    fetchPendingParticipations(); // Refresh pending requests list
-  } catch (err) {
-    console.error('Error approving participation', err);
-    alert('Error approving participation');
-  }
-};
+  // Approve participation request
+  const approveParticipation = async (username) => {
+    try {
+      await axios.post("https://ncthackathonportal.onrender.com/approve-participation", { username });
+      alert(`Participation request for ${username} approved.`);
+      fetchPendingParticipations();  // Re-fetch the list of pending participations to update the UI
+      fetchUsers(); // Update user list to reflect changes
+    } catch (err) {
+      console.error('Error approving participation', err);
+      alert('Error approving participation');
+    }
+  };
 
-// Reject participation request
-const rejectParticipation = async (username) => {
-  try {
-    await axios.post("https://ncthackathonportal.onrender.com/approve-participation", { username, isApproved: false });
-    alert(`Participation request for ${username} rejected.`);
-    fetchPendingParticipations(); // Refresh pending requests list
-  } catch (err) {
-    console.error('Error rejecting participation', err);
-    alert('Error rejecting participation');
-  }
-};
+  // Reject participation request
+  const rejectParticipation = async (username) => {
+    try {
+      await axios.post("https://ncthackathonportal.onrender.com/approve-participation", { username, isApproved: false });
+      alert(`Participation request for ${username} rejected.`);
+      fetchPendingParticipations();  // Re-fetch the list of pending participations to update the UI
+    } catch (err) {
+      console.error('Error rejecting participation', err);
+      alert('Error rejecting participation');
+    }
+  };
 
   // Approve group creation request
   const approveGroup = async (groupId) => {
     try {
-      await axios.put("https://ncthackathonportal.onrender.com/approve-group", { groupId, pendingApproval: false });
+      await axios.post("https://ncthackathonportal.onrender.com/approve-group", { groupId });
       alert(`Group creation request approved.`);
       fetchGroups(); // Refresh groups list
     } catch (err) {
@@ -104,7 +105,7 @@ const rejectParticipation = async (username) => {
   // Reject group creation request
   const rejectGroup = async (groupId) => {
     try {
-      await axios.put("https://ncthackathonportal.onrender.com/approve-group", { groupId, pendingApproval: null });
+      await axios.post("https://ncthackathonportal.onrender.com/approve-group", { groupId, pendingApproval: null });
       alert(`Group creation request rejected.`);
       fetchGroups(); // Refresh groups list
     } catch (err) {
@@ -143,7 +144,7 @@ const rejectParticipation = async (username) => {
           required
         />
         <select name="role" value={formData.role} onChange={handleChange}>
-          <option value="user">User</option>
+          <option value="user">User </option>
           <option value="judge">Judge</option>
           <option value="mentor">Mentor</option>
           <option value="admin">Admin</option>

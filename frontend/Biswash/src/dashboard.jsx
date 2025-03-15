@@ -26,7 +26,6 @@ const Dashboard = () => {
   const queryParams = new URLSearchParams(location.search);
   const username = queryParams.get("username");
 
-
   const [activeTab, setActiveTab] = useState("hackathons");
   const [submissions, setSubmissions] = useState([]);
   const [file, setFile] = useState(null);
@@ -51,8 +50,6 @@ const Dashboard = () => {
   const dropdownRef = useRef(null);
   const sidebarRef = useRef(null);
 
-  
-
   useEffect(() => {
     window.scrollTo(0, 0);
     document.body.style.overflow = "auto";
@@ -75,7 +72,6 @@ const Dashboard = () => {
     fetchUserGroups();
   }, [username, navigate]);
 
-  
   useEffect(() => {
     if (groups.length > 0) {
       const allGroupMembers = new Set();
@@ -96,7 +92,6 @@ const Dashboard = () => {
       if (sidebarRef.current && !sidebarRef.current.contains(event.target)) {
         setSidebarOpen(false);
       }
-
     };
   
     document.addEventListener("mousedown", handleClickOutside);
@@ -123,8 +118,8 @@ const Dashboard = () => {
     try {
       const res = await axios.get(`https://ncthackathonportal.onrender.com/participants`);
       const participant = res.data.find(p => p.username === username);
-      if (participant && participant.isApproved) {
-        setIsParticipating(true);
+      if (participant) {
+        setIsParticipating(participant.isApproved);
       } else {
         setIsParticipating(false);
       }
@@ -133,7 +128,6 @@ const Dashboard = () => {
       console.error("Error checking participation status", err);
     }
   };
-  
 
   const fetchGroups = async () => {
     try {
@@ -183,7 +177,6 @@ const Dashboard = () => {
   const isGroupApproved = (group) => {
     return group.pendingApproval === false; // Checks if the group is approved
   };
-  
 
   const handleCreateGroup = async (e) => {
     e.preventDefault();
@@ -222,26 +215,25 @@ const Dashboard = () => {
       alert(`Failed to create group: ${err.response?.data?.message || "Unknown error"}`);
     }
   };
-  
-const handleAddMember = (member) => {
-  if (!isGroupApproved(selectedGroup)) {
-    alert("Group is awaiting approval. You cannot add members at this time.");
-    return;
-  }
-  // Add member to group logic here
-  if (newGroup.members.includes(member)) {
-    setNewGroup({
-      ...newGroup,
-      members: newGroup.members.filter(m => m !== member)
-    });
-  } else {
-    setNewGroup({
-      ...newGroup,
-      members: [...newGroup.members, member]
-    });
-  }
-};
 
+  const handleAddMember = (member) => {
+    if (!isGroupApproved(selectedGroup)) {
+      alert("Group is awaiting approval. You cannot add members at this time.");
+      return;
+    }
+    // Add member to group logic here
+    if (newGroup.members.includes(member)) {
+      setNewGroup({
+        ...newGroup,
+        members: newGroup.members.filter(m => m !== member)
+      });
+    } else {
+      setNewGroup({
+        ...newGroup,
+        members: [...newGroup.members, member]
+      });
+    }
+  };
 
   const toggleParticipantsList = () => {
     setShowParticipantsList(!showParticipantsList);
@@ -332,7 +324,7 @@ const handleAddMember = (member) => {
               <div className="dashboard-dropdown-header">{username}</div>
               <ul className="dashboard-dropdown-menu">
                 <li onClick={() => navigate("/edit-profile")}>
-                  <FaUserEdit className="dashboard-dropdown-icon" /> 
+                  <FaUser Edit className="dashboard-dropdown-icon" /> 
                   Edit Profile
                 </li>
                 <li onClick={() => navigate("/settings")}>
@@ -343,7 +335,6 @@ const handleAddMember = (member) => {
                  <FaSignOutAlt style={{ color: 'red' }} className="dashboard-dropdown-icon" /> 
                   Logout
                 </li>
-
               </ul>
             </div>
           )}
@@ -391,7 +382,7 @@ const handleAddMember = (member) => {
                       className="dashboard-button" 
                       onClick={() => setActiveTab("groups")}
                     >
-                      <HiUserGroup className="dashboard-button-icon" /> 
+                      <HiUser Group className="dashboard-button-icon" /> 
                       Manage Your Groups
                     </button>
                   </div>
@@ -434,27 +425,26 @@ const handleAddMember = (member) => {
                 ) : (
                   <>
                    {userGroups.length > 0 ? (
-  <div className="dashboard-groups-list">
-    {userGroups.map(group => (
-      <div key={group._id} className="dashboard-group-card">
-        <h3> Group Name: {group.name}</h3>
-        <p>{group.description}</p>
-        {group.pendingApproval && <p className="dashboard-pending">Pending Approval</p>}
-        <div className="dashboard-group-members">
-          <h4>Members:</h4>
-          <ul>
-            {group.members.map(member => (
-              <li key={member}>{member}</li>
-            ))}
-          </ul>
-        </div>
-      </div>
-    ))}
-  </div>
-) : (
-  <p className="dashboard-empty-state">You haven't joined any groups yet.</p>
-)}
-
+                      <div className="dashboard-groups-list">
+                        {userGroups.map(group => (
+                          <div key={group._id} className="dashboard-group-card">
+                            <h3> Group Name: {group.name}</h3>
+                            <p>{group.description}</p>
+                            {group.pendingApproval && <p className="dashboard-pending">Pending Approval</p>}
+                            <div className="dashboard-group-members">
+                              <h4>Members:</h4>
+                              <ul>
+                                {group.members.map(member => (
+                                  <li key={member}>{member}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="dashboard-empty-state">You haven't joined any groups yet.</p>
+                    )}
 
                     <div className="dashboard-section-header">
                       <h2>Create New Group</h2>
@@ -534,6 +524,7 @@ const handleAddMember = (member) => {
                                     className="dashboard-remove-member"
                                     onClick={() => handleAddMember(member)}
                                   >
+                                    Remove
                                   </button>
                                 </li>
                               ))}
@@ -634,10 +625,6 @@ const handleAddMember = (member) => {
                             Uploaded by: <b>{submission.uploadedBy}</b>
                             <br />
                             Group: <b>{submission.groupName || "N/A"}</b>
-                            <br />
-                            {/* Grade: <b>{submission.grade} </b>
-                            <br />
-                            Feedback: <b>{submission.feedback}</b> */}
                           </p>
                         </div>
                         <a
