@@ -13,8 +13,10 @@ import {
   FaSignOutAlt,
   FaBars,
   FaMedal,
+  FaBell,
+  FaPlus,
 } from "react-icons/fa"
-import "./admindashboard.css" 
+import "./admindashboard.css" // You'll need to create this CSS file
 
 const AdminDashboard = () => {
   const location = useLocation()
@@ -32,6 +34,12 @@ const AdminDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [leaderboard, setLeaderboard] = useState([])
   const [leaderboardPublished, setLeaderboardPublished] = useState(false)
+  const [showNotificationForm, setShowNotificationForm] = useState(false)
+  const [notification, setNotification] = useState({
+    message: "",
+    type: "info",
+  })
+  const [notificationSuccess, setNotificationSuccess] = useState("")
 
   useEffect(() => {
     if (!username) {
@@ -189,6 +197,37 @@ const AdminDashboard = () => {
     setSidebarOpen(!sidebarOpen)
   }
 
+  const handleCreateNotification = async (e) => {
+    e.preventDefault()
+
+    if (!notification.message.trim()) {
+      alert("Please enter a notification message")
+      return
+    }
+
+    try {
+      await axios.post("https://ncthackathonportal.onrender.com/create-notification", {
+        message: notification.message,
+        type: notification.type,
+        sender: username,
+        senderRole: "admin",
+        isGlobal: true,
+      })
+
+      setNotificationSuccess("Notification sent successfully!")
+      setNotification({ message: "", type: "info" })
+
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setNotificationSuccess("")
+        setShowNotificationForm(false)
+      }, 3000)
+    } catch (err) {
+      console.error("Error creating notification", err)
+      alert("Failed to send notification. Please try again.")
+    }
+  }
+
   const menuItems = [
     { id: "pending-users", label: "Pending Users", icon: <FaUsers /> },
     { id: "pending-groups", label: "Pending Groups", icon: <FaUsersCog /> },
@@ -196,6 +235,7 @@ const AdminDashboard = () => {
     { id: "approved-groups", label: "Approved Groups", icon: <FaUsersCog /> },
     { id: "submissions", label: "Submissions", icon: <FaFileAlt /> },
     { id: "leaderboard", label: "Leaderboard", icon: <FaMedal /> },
+    { id: "notifications", label: "Notifications", icon: <FaBell /> },
   ]
 
   return (
@@ -507,6 +547,57 @@ const AdminDashboard = () => {
                       : "The leaderboard has not been published yet."}
                   </p>
                 )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === "notifications" && (
+            <div className="admin-dashboard-section">
+              <div className="admin-dashboard-section-header">
+                <h2>Notifications</h2>
+                <button
+                  className="admin-dashboard-button"
+                  onClick={() => setShowNotificationForm(!showNotificationForm)}
+                >
+                  <FaPlus /> Create Notification
+                </button>
+              </div>
+              <div className="admin-dashboard-section-body">
+                {notificationSuccess && <div className="admin-dashboard-success-message">{notificationSuccess}</div>}
+
+                {showNotificationForm && (
+                  <form onSubmit={handleCreateNotification} className="admin-dashboard-form">
+                    <div className="admin-dashboard-form-group">
+                      <label>Notification Type:</label>
+                      <select
+                        value={notification.type}
+                        onChange={(e) => setNotification({ ...notification, type: e.target.value })}
+                      >
+                        <option value="info">Information</option>
+                        <option value="warning">Warning</option>
+                        <option value="announcement">Announcement</option>
+                        <option value="success">Success</option>
+                      </select>
+                    </div>
+                    <div className="admin-dashboard-form-group">
+                      <label>Message:</label>
+                      <textarea
+                        value={notification.message}
+                        onChange={(e) => setNotification({ ...notification, message: e.target.value })}
+                        placeholder="Enter your notification message here..."
+                        rows={4}
+                        required
+                      />
+                    </div>
+                    <button type="submit" className="admin-dashboard-button">
+                      Send Notification
+                    </button>
+                  </form>
+                )}
+
+                <p className="admin-dashboard-info">
+                  Notifications will be sent to all users and will appear in their notification panel.
+                </p>
               </div>
             </div>
           )}

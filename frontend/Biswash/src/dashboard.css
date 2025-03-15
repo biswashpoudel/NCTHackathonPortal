@@ -7,9 +7,7 @@
   color: black;
   background-color: #f5f7fa;
 }
-.dashboard-greeting{
-  color:white;
-}
+
 /* Navbar Styles */
 .dashboard-navbar {
   display: flex;
@@ -124,6 +122,183 @@
   font-size: 1rem;
 }
 
+/* Navbar Right Styles (Notifications) */
+.dashboard-navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.dashboard-notification-container {
+  position: relative;
+}
+
+.dashboard-notification-button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.25rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.dashboard-notification-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.dashboard-notification-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background-color: #ef4444;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: bold;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Notification Dropdown */
+.dashboard-notification-dropdown {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 0.5rem;
+  width: 350px;
+  max-width: 90vw;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.dashboard-notification-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid #eee;
+}
+
+.dashboard-notification-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #1f2937;
+}
+
+.dashboard-notification-mark-all {
+  background: none;
+  border: none;
+  color: #0077be;
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0;
+}
+
+.dashboard-notification-mark-all:hover {
+  text-decoration: underline;
+}
+
+.dashboard-notification-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.dashboard-notification-item {
+  display: flex;
+  padding: 1rem;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  position: relative;
+}
+
+.dashboard-notification-item:last-child {
+  border-bottom: none;
+}
+
+.dashboard-notification-item:hover {
+  background-color: #f9fafb;
+}
+
+.dashboard-notification-item.unread {
+  background-color: #f0f7ff;
+}
+
+.dashboard-notification-icon {
+  margin-right: 0.75rem;
+  font-size: 1.25rem;
+  display: flex;
+  align-items: flex-start;
+}
+
+.notification-icon-info {
+  color: #0ea5e9;
+}
+
+.notification-icon-warning {
+  color: #f59e0b;
+}
+
+.notification-icon-announcement {
+  color: #8b5cf6;
+}
+
+.notification-icon-success {
+  color: #10b981;
+}
+
+.dashboard-notification-content {
+  flex: 1;
+}
+
+.dashboard-notification-message {
+  margin: 0 0 0.5rem 0;
+  color: #1f2937;
+  font-size: 0.9rem;
+}
+
+.dashboard-notification-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.dashboard-notification-sender {
+  font-weight: 500;
+}
+
+.dashboard-notification-unread-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #0077be;
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+}
+
+.dashboard-notification-empty {
+  padding: 2rem;
+  text-align: center;
+  color: #6b7280;
+  font-style: italic;
+  margin: 0;
+}
+
 /* Main Layout Styles */
 .dashboard-main {
   display: flex;
@@ -233,6 +408,9 @@
 .dashboard-section-header {
   padding: 1.25rem 1.5rem;
   border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .dashboard-section-header h2 {
@@ -266,21 +444,19 @@
 .dashboard-button {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.25rem;
+  padding: 0.5rem 1rem;
   background-color: #0077be;
   color: white;
   border: none;
   border-radius: 6px;
-  font-weight: 500;
+  font-size: 0.9rem;
   cursor: pointer;
-  transition: background-color 0.2s, transform 0.1s;
+  transition: background-color 0.2s;
 }
 
 .dashboard-button:hover {
   background-color: #005f8a;
-  transform: translateY(-1px);
 }
 
 .dashboard-button:disabled {
@@ -675,6 +851,16 @@
   margin-top: 1rem;
 }
 
+/* Info Box */
+.dashboard-info {
+  background-color: #f0f7ff;
+  border-left: 4px solid #0077be;
+  padding: 1rem;
+  margin-top: 1rem;
+  color: #1f2937;
+  font-size: 0.9rem;
+}
+
 /* Responsive Adjustments */
 @media (max-width: 768px) {
   .dashboard-sidebar {
@@ -714,6 +900,7 @@
     max-width: 150px;
   }
 }
+
 /* Additional styles to fix dropdown issues */
 /* Add these to your existing dashboard.css file */
 

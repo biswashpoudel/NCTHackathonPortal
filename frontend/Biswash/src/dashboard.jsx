@@ -18,6 +18,9 @@ import {
   FaUsers,
   FaHourglassHalf,
   FaMedal,
+  FaCheckCircle,
+  FaInfoCircle,
+  FaExclamationTriangle,
 } from "react-icons/fa"
 import { MdGroupAdd } from "react-icons/md"
 import { HiUserGroup } from "react-icons/hi2"
@@ -50,6 +53,9 @@ const Dashboard = () => {
   const [existingGroupMembers, setExistingGroupMembers] = useState([])
   const [leaderboard, setLeaderboard] = useState([])
   const [leaderboardPublished, setLeaderboardPublished] = useState(false)
+  const [notifications, setNotifications] = useState([])
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [showNotifications, setShowNotifications] = useState(false)
 
   const dropdownRef = useRef(null)
   const sidebarRef = useRef(null)
@@ -75,6 +81,7 @@ const Dashboard = () => {
     fetchGroups()
     fetchUserGroups()
     fetchLeaderboard()
+    fetchNotifications()
   }, [username, navigate])
 
   useEffect(() => {
@@ -369,6 +376,78 @@ const Dashboard = () => {
     }
   }
 
+  const fetchNotifications = async () => {
+    try {
+      const res = await axios.get(`https://ncthackathonportal.onrender.com/notifications?username=${username}`)
+      setNotifications(res.data)
+
+      // Count unread notifications
+      const unread = res.data.filter((notification) => !notification.isRead).length
+      setUnreadCount(unread)
+    } catch (err) {
+      console.error("Error fetching notifications", err)
+    }
+  }
+
+  const fetchUnreadCount = async () => {
+    try {
+      const res = await axios.get(
+        `https://ncthackathonportal.onrender.com/unread-notification-count?username=${username}`,
+      )
+      setUnreadCount(res.data.count)
+    } catch (err) {
+      console.error("Error fetching unread count", err)
+    }
+  }
+
+  const markAsRead = async (notificationId) => {
+    try {
+      await axios.post("https://ncthackathonportal.onrender.com/mark-notification-read", {
+        notificationId,
+        username,
+      })
+
+      // Update local state
+      setNotifications(
+        notifications.map((notification) =>
+          notification._id === notificationId ? { ...notification, isRead: true } : notification,
+        ),
+      )
+
+      // Update unread count
+      setUnreadCount((prev) => Math.max(0, prev - 1))
+    } catch (err) {
+      console.error("Error marking notification as read", err)
+    }
+  }
+
+  const markAllAsRead = async () => {
+    try {
+      await axios.post("https://ncthackathonportal.onrender.com/mark-all-notifications-read", {
+        username,
+      })
+
+      // Update local state
+      setNotifications(notifications.map((notification) => ({ ...notification, isRead: true })))
+      setUnreadCount(0)
+    } catch (err) {
+      console.error("Error marking all notifications as read", err)
+    }
+  }
+
+  useEffect(() => {
+    if (username) {
+      fetchNotifications()
+
+      // Set up polling for new notifications every 30 seconds
+      const interval = setInterval(() => {
+        fetchUnreadCount()
+      }, 30000)
+
+      return () => clearInterval(interval)
+    }
+  }, [username])
+
   return (
     <div className="dashboard-wrapper">
       <div className="dashboard-navbar">
@@ -379,30 +458,89 @@ const Dashboard = () => {
           <h2 className="dashboard-greeting">Hi, {username}</h2>
         </div>
 
-        <div className="dashboard-profile-container" ref={dropdownRef}>
-          <div className="dashboard-profile-icon" onClick={toggleProfileDropdown}>
-            {username ? username.charAt(0).toUpperCase() : "U"}
+        <div className="dashboard-navbar-right">
+          <div className="dashboard-notification-container">
+            <button className="dashboard-notification-button" onClick={() => setShowNotifications(!showNotifications)}>
+              <FaBell />
+              {unreadCount > 0 && <span className="dashboard-notification-badge">{unreadCount}</span>}
+            </button>
+
+            {showNotifications && (
+              <div className="dashboard-notification-dropdown">
+                <div className="dashboard-notification-header">
+                  <h3>Notifications</h3>
+                  {unreadCount > 0 && (
+                    <button className="dashboard-notification-mark-all" onClick={markAllAsRead}>
+                      Mark all as read
+                    </button>
+                  )}
+                </div>
+
+                <div className="dashboard-notification-list">
+                  {notifications.length > 0 ? (
+                    notifications.map((notification) => (
+                      <div
+                        key={notification._id}
+                        className={`dashboard-notification-item ${!notification.isRead ? "unread" : ""}`}
+                        onClick={() => markAsRead(notification._id)}
+                      >
+                        <div className="dashboard-notification-icon">
+                          {notification.type === "info" && <FaInfoCircle className="notification-icon-info" />}
+                          {notification.type === "warning" && (
+                            <FaExclamationTriangle className="notification-icon-warning" />
+                          )}
+                          {notification.type === "announcement" && (
+                            <FaMegaphone className="notification-icon-announcement" />
+                          )}
+                          {notification.type === "success" && <FaCheckCircle className="notification-icon-success" />}
+                        </div>
+                        <div className="dashboard-notification-content">
+                          <p className="dashboard-notification-message">{notification.message}</p>
+                          <div className="dashboard-notification-meta">
+                            <span className="dashboard-notification-sender">
+                              {notification.sender} ({notification.senderRole})
+                            </span>
+                            <span className="dashboard-notification-time">
+                              {new Date(notification.createdAt).toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+                        {!notification.isRead && <div className="dashboard-notification-unread-indicator"></div>}
+                      </div>
+                    ))
+                  ) : (
+                    <p className="dashboard-notification-empty">No notifications</p>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
-          {showProfileDropdown && (
-            <div className="dashboard-profile-dropdown">
-              <div className="dashboard-dropdown-header">{username}</div>
-              <ul className="dashboard-dropdown-menu">
-                <li onClick={() => navigate("/edit-profile")}>
-                  <FaUserEdit className="dashboard-dropdown-icon" />
-                  Edit Profile
-                </li>
-                <li onClick={() => navigate("/settings")}>
-                  <FaCog className="dashboard-dropdown-icon" />
-                  Settings
-                </li>
-                <li onClick={handleLogout} style={{ color: "red" }}>
-                  <FaSignOutAlt style={{ color: "red" }} className="dashboard-dropdown-icon" />
-                  Logout
-                </li>
-              </ul>
+          <div className="dashboard-profile-container" ref={dropdownRef}>
+            <div className="dashboard-profile-icon" onClick={toggleProfileDropdown}>
+              {username ? username.charAt(0).toUpperCase() : "U"}
             </div>
-          )}
+
+            {showProfileDropdown && (
+              <div className="dashboard-profile-dropdown">
+                <div className="dashboard-dropdown-header">{username}</div>
+                <ul className="dashboard-dropdown-menu">
+                  <li onClick={() => navigate("/edit-profile")}>
+                    <FaUserEdit className="dashboard-dropdown-icon" />
+                    Edit Profile
+                  </li>
+                  <li onClick={() => navigate("/settings")}>
+                    <FaCog className="dashboard-dropdown-icon" />
+                    Settings
+                  </li>
+                  <li onClick={handleLogout} style={{ color: "red" }}>
+                    <FaSignOutAlt style={{ color: "red" }} className="dashboard-dropdown-icon" />
+                    Logout
+                  </li>
+                </ul>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -701,11 +839,7 @@ const Dashboard = () => {
                         className={`dashboard-leaderboard-row ${index < 3 ? `top-${index + 1}` : ""}`}
                       >
                         <div className="dashboard-leaderboard-rank">
-                          {index < 3 ? (
-                            <FaMedal className={`medal-${index + 1}`} />
-                          ) : (
-                            index + 1
-                          )}
+                          {index < 3 ? <FaMedal className={`medal-${index + 1}`} /> : index + 1}
                         </div>
                         <div className="dashboard-leaderboard-group">{entry.groupName}</div>
                         <div className="dashboard-leaderboard-members">{entry.members.join(", ")}</div>
@@ -715,9 +849,9 @@ const Dashboard = () => {
                   </div>
                 ) : (
                   <p className="dashboard-empty-state">
-                    {leaderboardPublished ?
-                      "No leaderboard data available yet." :
-                      "The leaderboard has not been published yet."}
+                    {leaderboardPublished
+                      ? "No leaderboard data available yet."
+                      : "The leaderboard has not been published yet."}
                   </p>
                 )}
               </div>
@@ -752,3 +886,4 @@ const Dashboard = () => {
 }
 
 export default Dashboard
+

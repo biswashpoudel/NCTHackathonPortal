@@ -380,99 +380,245 @@ app.get("/leaderboard-status", async (req, res) => {
   try {
     // Check if there's a leaderboard status document in the database
     // You might want to create a new model for this
-    const status = await LeaderboardStatus.findOne();
-    
+    const status = await LeaderboardStatus.findOne()
+
     if (!status) {
       // If no status exists, create one with published: false
-      const newStatus = new LeaderboardStatus({ published: false });
-      await newStatus.save();
-      return res.status(200).json({ published: false });
+      const newStatus = new LeaderboardStatus({ published: false })
+      await newStatus.save()
+      return res.status(200).json({ published: false })
     }
-    
-    res.status(200).json({ published: status.published });
+
+    res.status(200).json({ published: status.published })
   } catch (error) {
-    res.status(500).json({ message: "Error checking leaderboard status", error });
+    res.status(500).json({ message: "Error checking leaderboard status", error })
   }
-});
+})
 
 // Publish Leaderboard
 app.post("/publish-leaderboard", async (req, res) => {
   try {
     // Update the leaderboard status to published
-    const status = await LeaderboardStatus.findOne();
-    
+    const status = await LeaderboardStatus.findOne()
+
     if (status) {
-      status.published = true;
-      await status.save();
+      status.published = true
+      await status.save()
     } else {
-      const newStatus = new LeaderboardStatus({ published: true });
-      await newStatus.save();
+      const newStatus = new LeaderboardStatus({ published: true })
+      await newStatus.save()
     }
-    
-    res.status(200).json({ message: "Leaderboard published successfully" });
+
+    res.status(200).json({ message: "Leaderboard published successfully" })
   } catch (error) {
-    res.status(500).json({ message: "Error publishing leaderboard", error });
+    res.status(500).json({ message: "Error publishing leaderboard", error })
   }
-});
+})
 
 // Get Leaderboard
 app.get("/leaderboard", async (req, res) => {
   try {
     // Check if leaderboard is published
-    const status = await LeaderboardStatus.findOne();
-    
+    const status = await LeaderboardStatus.findOne()
+
     if (!status || !status.published) {
-      return res.status(403).json({ message: "Leaderboard has not been published yet" });
+      return res.status(403).json({ message: "Leaderboard has not been published yet" })
     }
-    
+
     // Get all submissions with grades
-    const submissions = await Submission.find({ grade: { $ne: null } });
-    
+    const submissions = await Submission.find({ grade: { $ne: null } })
+
     // Group submissions by group and calculate average grade
-    const groupScores = {};
-    
+    const groupScores = {}
+
     for (const submission of submissions) {
       if (!groupScores[submission.groupName]) {
         // Find the group to get members
-        const group = await Group.findOne({ name: submission.groupName });
-        
+        const group = await Group.findOne({ name: submission.groupName })
+
         groupScores[submission.groupName] = {
           groupName: submission.groupName,
           members: group ? group.members : [],
           totalGrade: submission.grade,
-          count: 1
-        };
+          count: 1,
+        }
       } else {
-        groupScores[submission.groupName].totalGrade += submission.grade;
-        groupScores[submission.groupName].count += 1;
+        groupScores[submission.groupName].totalGrade += submission.grade
+        groupScores[submission.groupName].count += 1
       }
     }
-    
+
     // Calculate average grade for each group
-    const leaderboard = Object.values(groupScores).map(group => ({
+    const leaderboard = Object.values(groupScores).map((group) => ({
       _id: group.groupName,
       groupName: group.groupName,
       members: group.members,
-      grade: Math.round(group.totalGrade / group.count)
-    }));
-    
+      grade: Math.round(group.totalGrade / group.count),
+    }))
+
     // Sort by grade (highest first)
-    leaderboard.sort((a, b) => b.grade - a.grade);
-    
-    res.status(200).json(leaderboard);
+    leaderboard.sort((a, b) => b.grade - a.grade)
+
+    res.status(200).json(leaderboard)
   } catch (error) {
-    res.status(500).json({ message: "Error fetching leaderboard", error });
+    res.status(500).json({ message: "Error fetching leaderboard", error })
   }
-});
+})
 
 // Leaderboard Status Schema
 const leaderboardStatusSchema = new mongoose.Schema({
   published: { type: Boolean, default: false },
-  publishedAt: { type: Date, default: Date.now }
-});
+  publishedAt: { type: Date, default: Date.now },
+})
 
-const LeaderboardStatus = mongoose.model("LeaderboardStatus", leaderboardStatusSchema);
+const LeaderboardStatus = mongoose.model("LeaderboardStatus", leaderboardStatusSchema)
+
+// Notification Schema
+const notificationSchema = new mongoose.Schema({
+  message: { type: String, required: true },
+  type: { type: String, enum: ["info", "warning", "announcement", "success"], default: "info" },
+  sender: { type: String, required: true },
+  senderRole: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+  isGlobal: { type: Boolean, default: true },
+  recipients: [{ type: String }], // Array of usernames if not global
+  readBy: [{ type: String }], // Array of usernames who have read the notification
+})
+
+const Notification = mongoose.model("Notification", notificationSchema)
+
+// Create Notification
+app.post("/create-notification", async (req, res) => {
+  const { message, type, sender, senderRole, isGlobal, recipients } = req.body
+
+  if (!message || !sender || !senderRole) {
+    return res.status(400).json({ message: "Message, sender, and sender role are required" })
+  }
+
+  try {
+    const notification = new Notification({
+      message,
+      type: type || "info",
+      sender,
+      senderRole,
+      isGlobal: isGlobal !== undefined ? isGlobal : true,
+      recipients: recipients || [],
+      readBy: [],
+    })
+
+    await notification.save()
+    res.status(201).json({ message: "Notification created successfully", notification })
+  } catch (error) {
+    res.status(500).json({ message: "Error creating notification", error })
+  }
+})
+
+// Get Notifications for a User
+app.get("/notifications", async (req, res) => {
+  const { username } = req.query
+
+  if (!username) {
+    return res.status(400).json({ message: "Username is required" })
+  }
+
+  try {
+    // Get global notifications or notifications specifically for this user
+    const notifications = await Notification.find({
+      $or: [{ isGlobal: true }, { recipients: username }],
+    }).sort({ createdAt: -1 }) // Sort by newest first
+
+    // Add a field to indicate if the notification is read by this user
+    const notificationsWithReadStatus = notifications.map((notification) => {
+      const isRead = notification.readBy.includes(username)
+      return {
+        ...notification.toObject(),
+        isRead,
+      }
+    })
+
+    res.status(200).json(notificationsWithReadStatus)
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching notifications", error })
+  }
+})
+
+// Mark Notification as Read
+app.post("/mark-notification-read", async (req, res) => {
+  const { notificationId, username } = req.body
+
+  if (!notificationId || !username) {
+    return res.status(400).json({ message: "Notification ID and username are required" })
+  }
+
+  try {
+    const notification = await Notification.findById(notificationId)
+
+    if (!notification) {
+      return res.status(404).json({ message: "Notification not found" })
+    }
+
+    // Add username to readBy array if not already there
+    if (!notification.readBy.includes(username)) {
+      notification.readBy.push(username)
+      await notification.save()
+    }
+
+    res.status(200).json({ message: "Notification marked as read" })
+  } catch (error) {
+    res.status(500).json({ message: "Error marking notification as read", error })
+  }
+})
+
+// Mark All Notifications as Read
+app.post("/mark-all-notifications-read", async (req, res) => {
+  const { username } = req.body
+
+  if (!username) {
+    return res.status(400).json({ message: "Username is required" })
+  }
+
+  try {
+    // Find all notifications for this user
+    const notifications = await Notification.find({
+      $or: [{ isGlobal: true }, { recipients: username }],
+      readBy: { $ne: username }, // Only get notifications not already read by this user
+    })
+
+    // Add username to readBy array for each notification
+    for (const notification of notifications) {
+      notification.readBy.push(username)
+      await notification.save()
+    }
+
+    res.status(200).json({ message: "All notifications marked as read" })
+  } catch (error) {
+    res.status(500).json({ message: "Error marking all notifications as read", error })
+  }
+})
+
+// Get Unread Notification Count
+app.get("/unread-notification-count", async (req, res) => {
+  const { username } = req.query
+
+  if (!username) {
+    return res.status(400).json({ message: "Username is required" })
+  }
+
+  try {
+    // Count notifications that are either global or specifically for this user
+    // and not already read by this user
+    const count = await Notification.countDocuments({
+      $or: [{ isGlobal: true }, { recipients: username }],
+      readBy: { $ne: username },
+    })
+
+    res.status(200).json({ count })
+  } catch (error) {
+    res.status(500).json({ message: "Error counting unread notifications", error })
+  }
+})
 
 // Start Server
 const PORT = process.env.PORT || 5000
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`))
+

@@ -14,7 +14,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 0.75rem 1.5rem;
-  background-color: #0077be;
+  background-color: #7c3aed; /* Purple for admin to differentiate from user dashboard */
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   position: sticky;
   top: 0;
@@ -48,13 +48,56 @@
 }
 
 .admin-dashboard-menu-toggle:hover {
-  background-color: #0077be;
+  background-color: #6d28d9;
 }
 
+/* Add these styles to your admin-dashboard.css file */
+
+/* Notification Button */
 .admin-dashboard-navbar-right {
   display: flex;
   align-items: center;
   gap: 1rem;
+}
+
+.admin-dashboard-notification-container {
+  position: relative;
+}
+
+.admin-dashboard-notification-button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.25rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.admin-dashboard-notification-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.admin-dashboard-notification-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background-color: #ef4444;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: bold;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .admin-dashboard-username {
@@ -76,7 +119,7 @@
 }
 
 .admin-dashboard-logout:hover {
-  background-color: #0077be;
+  background-color: #6d28d9;
 }
 
 /* Main Layout Styles */
@@ -129,13 +172,13 @@
 
 .admin-dashboard-sidebar-menu li:hover {
   background-color: #f7f9fc;
-  color: #0077be;
+  color: #7c3aed;
 }
 
 .admin-dashboard-sidebar-menu li.active {
   background-color: #f5f3ff;
-  color: #0077be;
-  border-left: 3px solid #0077be;
+  color: #7c3aed;
+  border-left: 3px solid #7c3aed;
 }
 
 .admin-dashboard-menu-icon {
@@ -144,7 +187,7 @@
   justify-content: center;
   margin-right: 15px;
   font-size: 18px;
-  color: #0077be;
+  color: #7c3aed;
   min-width: 22px;
 }
 
@@ -166,9 +209,11 @@
   overflow: hidden;
 }
 
+/* Form Styles for Notifications */
 .admin-dashboard-section-header {
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .admin-dashboard-section-header h2 {
@@ -176,6 +221,24 @@
   font-size: 1.25rem;
   font-weight: 600;
   color: #1f2937;
+}
+
+.admin-dashboard-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: #7c3aed;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.admin-dashboard-button:hover {
+  background-color: #6d28d9;
 }
 
 .admin-dashboard-section-body {
@@ -414,7 +477,7 @@
 
 .admin-dashboard-stat-icon.purple {
   background-color: #f5f3ff;
-  color: #0077be;
+  color: #7c3aed;
 }
 
 .admin-dashboard-stat-icon.blue {
@@ -521,13 +584,54 @@
 }
 
 .admin-dashboard-pagination-button.active {
-  background-color: #0077be;
+  background-color: #7c3aed;
   color: #ffffff;
-  border-color: #0077be;
+  border-color: #7c3aed;
 }
 
 .admin-dashboard-pagination-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.admin-dashboard-info {
+  background-color: #f5f3ff;
+  border-left: 4px solid #7c3aed;
+  padding: 1rem;
+  margin-top: 1rem;
+  color: #1f2937;
+  font-size: 0.9rem;
+}
+
+.admin-dashboard-form {
+  margin-top: 1.5rem;
+  background-color: #f9fafb;
+  padding: 1.5rem;
+  border-radius: 8px;
+}
+
+.admin-dashboard-form-group {
+  margin-bottom: 1.5rem;
+}
+
+.admin-dashboard-form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.admin-dashboard-form-group select,
+.admin-dashboard-form-group textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+.admin-dashboard-form-group textarea {
+  min-height: 100px;
+  resize: vertical;
 }
 

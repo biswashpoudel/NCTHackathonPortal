@@ -230,8 +230,6 @@
 }
 
 .dashboard-section-header {
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #eee;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -277,21 +275,19 @@
 .dashboard-button {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.25rem;
+  padding: 0.5rem 1rem;
   background-color: #6b21a8;
   color: white;
   border: none;
   border-radius: 6px;
-  font-weight: 500;
+  font-size: 0.9rem;
   cursor: pointer;
-  transition: background-color 0.2s, transform 0.1s;
+  transition: background-color 0.2s;
 }
 
 .dashboard-button:hover {
   background-color: #581c87;
-  transform: translateY(-1px);
 }
 
 .dashboard-button:disabled {
@@ -521,11 +517,37 @@
   font-size: 0.875rem;
 }
 
-.dashboard-leaderboard-score {
-  font-weight: 600;
-  color: #6b21a8;
-  font-size: 1.25rem;
-  text-align: center;
+/* Form Styles for Notifications */
+.dashboard-form {
+  margin-top: 1.5rem;
+  background-color: #f9fafb;
+  padding: 1.5rem;
+  border-radius: 8px;
+}
+
+.dashboard-form-group {
+  margin-bottom: 1.5rem;
+}
+
+.dashboard-form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.dashboard-form-group select,
+.dashboard-form-group textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+.dashboard-form-group textarea {
+  min-height: 100px;
+  resize: vertical;
 }
 
 /* Responsive Adjustments */

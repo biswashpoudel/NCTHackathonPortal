@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import axios from "axios";
+"use client"
+
+import { useState, useEffect } from "react"
+import { useLocation, useNavigate } from "react-router-dom"
+import axios from "axios"
 import {
   FaTrophy,
-  FaFileUpload,
   FaComments,
   FaBell,
   FaLaptopCode,
@@ -17,134 +18,141 @@ import {
   FaCheck,
   FaMedal,
   FaGlobe,
-} from "react-icons/fa";
-import "./judgedashboard.css";
+  FaPlus,
+} from "react-icons/fa"
+import "./judgedashboard.css"
 
 const JudgeDashboard = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const queryParams = new URLSearchParams(location.search);
-  const username = queryParams.get("username");
+  const location = useLocation()
+  const navigate = useNavigate()
+  const queryParams = new URLSearchParams(location.search)
+  const username = queryParams.get("username")
 
-  const [activeTab, setActiveTab] = useState("judgeSubmissions");
-  const [submissions, setSubmissions] = useState([]);
-  const [leaderboard, setLeaderboard] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
-  const [publishLoading, setPublishLoading] = useState(false);
-  const [leaderboardPublished, setLeaderboardPublished] = useState(false);
+  const [activeTab, setActiveTab] = useState("judgeSubmissions")
+  const [submissions, setSubmissions] = useState([])
+  const [leaderboard, setLeaderboard] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [successMessage, setSuccessMessage] = useState("")
+  const [publishLoading, setPublishLoading] = useState(false)
+  const [leaderboardPublished, setLeaderboardPublished] = useState(false)
+  const [showNotificationForm, setShowNotificationForm] = useState(false)
+  const [notification, setNotification] = useState({
+    message: "",
+    type: "info",
+  })
+  const [notificationSuccess, setNotificationSuccess] = useState("")
 
   // Base URL for API endpoints
-  const API_BASE_URL = "https://ncthackathonportal.onrender.com";
+  const API_BASE_URL = "https://ncthackathonportal.onrender.com"
 
   useEffect(() => {
-    window.scrollTo(0, 0);
-    document.body.style.overflow = "auto";
+    window.scrollTo(0, 0)
+    document.body.style.overflow = "auto"
     return () => {
-      document.body.style.overflow = "";
-    };
-  }, []);
+      document.body.style.overflow = ""
+    }
+  }, [])
 
   useEffect(() => {
     if (!username) {
-      console.log("No username found, redirecting to login");
-      navigate("/", { replace: true });
-      return;
+      console.log("No username found, redirecting to login")
+      navigate("/", { replace: true })
+      return
     }
-    fetchAllSubmissions();
-    checkLeaderboardStatus();
-  }, [username, navigate]);
+    fetchAllSubmissions()
+    checkLeaderboardStatus()
+  }, [username, navigate])
 
   useEffect(() => {
     if (activeTab === "leaderboard") {
-      fetchLeaderboard();
+      fetchLeaderboard()
     }
-  }, [activeTab]);
+  }, [activeTab])
 
   const fetchAllSubmissions = async () => {
     try {
-      setLoading(true);
+      setLoading(true)
       // Using the api/submissions endpoint from your server.js which returns all submissions
-      const res = await axios.get(`${API_BASE_URL}/api/submissions`);
-      setSubmissions(res.data);
-      setLoading(false);
+      const res = await axios.get(`${API_BASE_URL}/api/submissions`)
+      setSubmissions(res.data)
+      setLoading(false)
     } catch (err) {
-      console.error("Error fetching submissions", err);
-      setError("Failed to load submissions. Please try again.");
-      setLoading(false);
+      console.error("Error fetching submissions", err)
+      setError("Failed to load submissions. Please try again.")
+      setLoading(false)
     }
-  };
+  }
 
   const checkLeaderboardStatus = async () => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/leaderboard-status`);
-      setLeaderboardPublished(res.data.published);
+      const res = await axios.get(`${API_BASE_URL}/leaderboard-status`)
+      setLeaderboardPublished(res.data.published)
     } catch (err) {
-      console.error("Error checking leaderboard status", err);
-      setLeaderboardPublished(false);
+      console.error("Error checking leaderboard status", err)
+      setLeaderboardPublished(false)
     }
-  };
+  }
 
   const fetchLeaderboard = async () => {
     try {
-      setLoading(true);
-      const res = await axios.get(`${API_BASE_URL}/leaderboard`);
-      setLeaderboard(res.data);
-      setLoading(false);
+      setLoading(true)
+      const res = await axios.get(`${API_BASE_URL}/leaderboard`)
+      setLeaderboard(res.data)
+      setLoading(false)
     } catch (err) {
-      console.error("Error fetching leaderboard", err);
-      setError("Failed to load leaderboard. Please try again.");
-      setLoading(false);
+      console.error("Error fetching leaderboard", err)
+      setError("Failed to load leaderboard. Please try again.")
+      setLoading(false)
     }
-  };
+  }
 
   const handleLogout = () => {
-    localStorage.removeItem("authToken");
-    navigate("/", { replace: true });
-  };
+    localStorage.removeItem("authToken")
+    navigate("/", { replace: true })
+  }
 
   const toggleProfileDropdown = () => {
-    setShowProfileDropdown(!showProfileDropdown);
-  };
+    setShowProfileDropdown(!showProfileDropdown)
+  }
 
   const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
+    setSidebarOpen(!sidebarOpen)
+  }
 
   const handleGradeChange = (submissionId, grade) => {
     const updatedSubmissions = submissions.map((submission) =>
-      submission._id === submissionId ? { ...submission, grade: Number(grade) } : submission
-    );
-    setSubmissions(updatedSubmissions);
-  };
+      submission._id === submissionId ? { ...submission, grade: Number(grade) } : submission,
+    )
+    setSubmissions(updatedSubmissions)
+  }
 
   const handleFeedbackChange = (submissionId, feedback) => {
     const updatedSubmissions = submissions.map((submission) =>
-      submission._id === submissionId ? { ...submission, feedback } : submission
-    );
-    setSubmissions(updatedSubmissions);
-  };
+      submission._id === submissionId ? { ...submission, feedback } : submission,
+    )
+    setSubmissions(updatedSubmissions)
+  }
 
   const submitGradeAndFeedback = async (submissionId) => {
-    const submission = submissions.find((sub) => sub._id === submissionId);
-    
+    const submission = submissions.find((sub) => sub._id === submissionId)
+
     // Validate inputs
     if (!submission.grade && submission.grade !== 0) {
-      setError("Please provide a grade (0-100).");
-      return;
+      setError("Please provide a grade (0-100).")
+      return
     }
-    
+
     if (!submission.feedback || submission.feedback.trim() === "") {
-      setError("Please provide feedback.");
-      return;
+      setError("Please provide feedback.")
+      return
     }
-    
+
     if (submission.grade < 0 || submission.grade > 100) {
-      setError("Grade must be between 0 and 100.");
-      return;
+      setError("Grade must be between 0 and 100.")
+      return
     }
 
     try {
@@ -153,63 +161,96 @@ const JudgeDashboard = () => {
         submissionId,
         grade: submission.grade,
         feedback: submission.feedback,
-      });
-      
-      setSuccessMessage("Grade and feedback submitted successfully!");
-      setError(null);
-      
+      })
+
+      setSuccessMessage("Grade and feedback submitted successfully!")
+      setError(null)
+
       // Auto-clear success message after 3 seconds
       setTimeout(() => {
-        setSuccessMessage("");
-      }, 3000);
-      
+        setSuccessMessage("")
+      }, 3000)
+
       // Refresh submissions to get updated data
-      fetchAllSubmissions();
+      fetchAllSubmissions()
     } catch (err) {
-      console.error("Error submitting grade and feedback", err);
-      setError("Failed to submit. Please try again.");
+      console.error("Error submitting grade and feedback", err)
+      setError("Failed to submit. Please try again.")
     }
-  };
+  }
 
   const handleDownload = (filename) => {
-    window.open(`${API_BASE_URL}/download/${filename}`, '_blank');
-  };
+    window.open(`${API_BASE_URL}/download/${filename}`, "_blank")
+  }
 
   const publishLeaderboard = async () => {
     // Check if all submissions have been graded
-    const ungradedSubmissions = submissions.filter(sub => sub.grade === null || sub.grade === undefined);
-    
+    const ungradedSubmissions = submissions.filter((sub) => sub.grade === null || sub.grade === undefined)
+
     if (ungradedSubmissions.length > 0) {
-      setError(`There are ${ungradedSubmissions.length} ungraded submissions. Please grade all submissions before publishing.`);
-      return;
+      setError(
+        `There are ${ungradedSubmissions.length} ungraded submissions. Please grade all submissions before publishing.`,
+      )
+      return
     }
 
     try {
-      setPublishLoading(true);
-      await axios.post(`${API_BASE_URL}/publish-leaderboard`);
-      setLeaderboardPublished(true);
-      setSuccessMessage("Leaderboard published successfully! All participants can now view the results.");
-      setError(null);
-      
+      setPublishLoading(true)
+      await axios.post(`${API_BASE_URL}/publish-leaderboard`)
+      setLeaderboardPublished(true)
+      setSuccessMessage("Leaderboard published successfully! All participants can now view the results.")
+      setError(null)
+
       // Auto-clear success message after 3 seconds
       setTimeout(() => {
-        setSuccessMessage("");
-      }, 3000);
-      
-      setPublishLoading(false);
+        setSuccessMessage("")
+      }, 3000)
+
+      setPublishLoading(false)
     } catch (err) {
-      console.error("Error publishing leaderboard", err);
-      setError("Failed to publish leaderboard. Please try again.");
-      setPublishLoading(false);
+      console.error("Error publishing leaderboard", err)
+      setError("Failed to publish leaderboard. Please try again.")
+      setPublishLoading(false)
     }
-  };
+  }
+
+  const handleCreateNotification = async (e) => {
+    e.preventDefault()
+
+    if (!notification.message.trim()) {
+      alert("Please enter a notification message")
+      return
+    }
+
+    try {
+      await axios.post("https://ncthackathonportal.onrender.com/create-notification", {
+        message: notification.message,
+        type: notification.type,
+        sender: username,
+        senderRole: "judge",
+        isGlobal: true,
+      })
+
+      setNotificationSuccess("Notification sent successfully!")
+      setNotification({ message: "", type: "info" })
+
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setNotificationSuccess("")
+        setShowNotificationForm(false)
+      }, 3000)
+    } catch (err) {
+      console.error("Error creating notification", err)
+      alert("Failed to send notification. Please try again.")
+    }
+  }
 
   const menuItems = [
     { id: "judgeSubmissions", label: "View Submissions", icon: <FaLaptopCode /> },
     { id: "leaderboard", label: "Leaderboard", icon: <FaTrophy /> },
     { id: "discussion", label: "Discussion", icon: <FaComments /> },
     { id: "notifications", label: "Notifications", icon: <FaBell /> },
-  ];
+  ]
 
   return (
     <div className="dashboard-wrapper">
@@ -256,11 +297,7 @@ const JudgeDashboard = () => {
 
           <ul className="dashboard-sidebar-menu">
             {menuItems.map((item) => (
-              <li
-                key={item.id}
-                className={activeTab === item.id ? "active" : ""}
-                onClick={() => setActiveTab(item.id)}
-              >
+              <li key={item.id} className={activeTab === item.id ? "active" : ""} onClick={() => setActiveTab(item.id)}>
                 <span className="dashboard-menu-icon">{item.icon}</span>
                 <span className="dashboard-menu-text">{item.label}</span>
               </li>
@@ -274,8 +311,8 @@ const JudgeDashboard = () => {
               <div className="dashboard-section-header">
                 <h2>All Submissions</h2>
                 <div className="dashboard-header-actions">
-                  <button 
-                    className={`dashboard-publish-button ${leaderboardPublished ? 'published' : ''}`}
+                  <button
+                    className={`dashboard-publish-button ${leaderboardPublished ? "published" : ""}`}
                     onClick={publishLeaderboard}
                     disabled={publishLoading || leaderboardPublished}
                   >
@@ -293,21 +330,13 @@ const JudgeDashboard = () => {
                   </button>
                 </div>
               </div>
-              
+
               {/* Show error messages */}
-              {error && (
-                <div className="dashboard-error-message">
-                  {error}
-                </div>
-              )}
-              
+              {error && <div className="dashboard-error-message">{error}</div>}
+
               {/* Show success messages */}
-              {successMessage && (
-                <div className="dashboard-success-message">
-                  {successMessage}
-                </div>
-              )}
-              
+              {successMessage && <div className="dashboard-success-message">{successMessage}</div>}
+
               <div className="dashboard-section-body">
                 {loading ? (
                   <p className="dashboard-loading">Loading submissions...</p>
@@ -316,26 +345,33 @@ const JudgeDashboard = () => {
                     <div key={submission._id} className="dashboard-submission-item">
                       <div className="dashboard-submission-info">
                         <h3>{submission.filename}</h3>
-                        <p>Uploaded by: <b>{submission.uploadedBy}</b></p>
-                        <p>Group: <b>{submission.groupName}</b></p>
-                        <p>Date: <b>{new Date(submission.date).toLocaleString()}</b></p>
-                        
+                        <p>
+                          Uploaded by: <b>{submission.uploadedBy}</b>
+                        </p>
+                        <p>
+                          Group: <b>{submission.groupName}</b>
+                        </p>
+                        <p>
+                          Date: <b>{new Date(submission.date).toLocaleString()}</b>
+                        </p>
+
                         {/* Display existing grade and feedback if available */}
                         {submission.grade !== null && (
                           <div className="dashboard-existing-feedback">
-                            <p>Grade: <b>{submission.grade}</b></p>
-                            <p>Feedback: <b>{submission.feedback}</b></p>
+                            <p>
+                              Grade: <b>{submission.grade}</b>
+                            </p>
+                            <p>
+                              Feedback: <b>{submission.feedback}</b>
+                            </p>
                           </div>
                         )}
                       </div>
-                      
-                      <button
-                        onClick={() => handleDownload(submission.filename)}
-                        className="dashboard-view-button"
-                      >
+
+                      <button onClick={() => handleDownload(submission.filename)} className="dashboard-view-button">
                         <FaDownload /> Download
                       </button>
-                      
+
                       <div className="dashboard-grade-feedback">
                         <input
                           type="number"
@@ -350,10 +386,7 @@ const JudgeDashboard = () => {
                           value={submission.feedback || ""}
                           onChange={(e) => handleFeedbackChange(submission._id, e.target.value)}
                         />
-                        <button
-                          className="dashboard-button"
-                          onClick={() => submitGradeAndFeedback(submission._id)}
-                        >
+                        <button className="dashboard-button" onClick={() => submitGradeAndFeedback(submission._id)}>
                           Submit
                         </button>
                       </div>
@@ -375,12 +408,8 @@ const JudgeDashboard = () => {
                 {!leaderboardPublished ? (
                   <div className="dashboard-notice">
                     <p>The leaderboard has not been published yet.</p>
-                    {submissions.some(sub => sub.grade !== null) && (
-                      <button 
-                        className="dashboard-button"
-                        onClick={publishLeaderboard}
-                        disabled={publishLoading}
-                      >
+                    {submissions.some((sub) => sub.grade !== null) && (
+                      <button className="dashboard-button" onClick={publishLeaderboard} disabled={publishLoading}>
                         {publishLoading ? "Publishing..." : "Publish Leaderboard"}
                       </button>
                     )}
@@ -396,16 +425,12 @@ const JudgeDashboard = () => {
                       <div className="dashboard-leaderboard-score">Score</div>
                     </div>
                     {leaderboard.map((entry, index) => (
-                      <div 
-                        key={entry._id} 
+                      <div
+                        key={entry._id}
                         className={`dashboard-leaderboard-row ${index < 3 ? `top-${index + 1}` : ""}`}
                       >
                         <div className="dashboard-leaderboard-rank">
-                          {index < 3 ? (
-                            <FaMedal className={`medal-${index + 1}`} />
-                          ) : (
-                            index + 1
-                          )}
+                          {index < 3 ? <FaMedal className={`medal-${index + 1}`} /> : index + 1}
                         </div>
                         <div className="dashboard-leaderboard-group">{entry.groupName}</div>
                         <div className="dashboard-leaderboard-members">{entry.members.join(", ")}</div>
@@ -435,16 +460,54 @@ const JudgeDashboard = () => {
             <div className="dashboard-section">
               <div className="dashboard-section-header">
                 <h2>Notifications</h2>
+                <button className="dashboard-button" onClick={() => setShowNotificationForm(!showNotificationForm)}>
+                  <FaPlus /> Create Notification
+                </button>
               </div>
               <div className="dashboard-section-body">
-                <p className="dashboard-empty-state">You have no new notifications.</p>
+                {notificationSuccess && <div className="dashboard-success-message">{notificationSuccess}</div>}
+
+                {showNotificationForm && (
+                  <form onSubmit={handleCreateNotification} className="dashboard-form">
+                    <div className="dashboard-form-group">
+                      <label>Notification Type:</label>
+                      <select
+                        value={notification.type}
+                        onChange={(e) => setNotification({ ...notification, type: e.target.value })}
+                      >
+                        <option value="info">Information</option>
+                        <option value="warning">Warning</option>
+                        <option value="announcement">Announcement</option>
+                        <option value="success">Success</option>
+                      </select>
+                    </div>
+                    <div className="dashboard-form-group">
+                      <label>Message:</label>
+                      <textarea
+                        value={notification.message}
+                        onChange={(e) => setNotification({ ...notification, message: e.target.value })}
+                        placeholder="Enter your notification message here..."
+                        rows={4}
+                        required
+                      />
+                    </div>
+                    <button type="submit" className="dashboard-button">
+                      Send Notification
+                    </button>
+                  </form>
+                )}
+
+                <p className="dashboard-empty-state">
+                  Notifications will be sent to all users and will appear in their notification panel.
+                </p>
               </div>
             </div>
           )}
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default JudgeDashboard;
+export default JudgeDashboard
+
