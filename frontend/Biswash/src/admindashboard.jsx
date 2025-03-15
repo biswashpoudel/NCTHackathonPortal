@@ -1,224 +1,460 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import { useNavigate } from "react-router-dom";
-import "./AdminDashboard.css";
+"use client"
+
+import { useState, useEffect } from "react"
+import { useLocation, useNavigate } from "react-router-dom"
+import axios from "axios"
+import {
+  FaUsers,
+  FaUserCheck,
+  FaCheckCircle,
+  FaTimesCircle,
+  FaFileAlt,
+  FaUsersCog,
+  FaSignOutAlt,
+  FaBars,
+} from "react-icons/fa"
+import "./admindashboard.css" // You'll need to create this CSS file
 
 const AdminDashboard = () => {
-  const [users, setUsers] = useState([]);
-  const [groups, setGroups] = useState([]);
-  const [pendingParticipations, setPendingParticipations] = useState([]);
-  const [formData, setFormData] = useState({
-    username: "",
-    email: "",
-    password: "",
-    role: "user",
-  });
-  const [errorMessage, setErrorMessage] = useState("");
-  const navigate = useNavigate();
+  const location = useLocation()
+  const navigate = useNavigate()
+  const queryParams = new URLSearchParams(location.search)
+  const username = queryParams.get("username")
+
+  const [activeTab, setActiveTab] = useState("pending-users")
+  const [pendingUsers, setPendingUsers] = useState([])
+  const [pendingGroups, setPendingGroups] = useState([])
+  const [approvedUsers, setApprovedUsers] = useState([])
+  const [approvedGroups, setApprovedGroups] = useState([])
+  const [submissions, setSubmissions] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
-    fetchUsers();
-    fetchPendingParticipations();
-    fetchGroups();
-  }, []);
-
-  const fetchUsers = async () => {
-    try {
-      const res = await axios.get("https://ncthackathonportal.onrender.com/users");
-      setUsers(res.data);
-    } catch (err) {
-      console.error("Error fetching users:", err);
+    if (!username) {
+      navigate("/", { replace: true })
+      return
     }
-  };
 
-  const fetchGroups = async () => {
+    fetchPendingUsers()
+    fetchPendingGroups()
+    fetchApprovedUsers()
+    fetchApprovedGroups()
+    fetchSubmissions()
+  }, [username, navigate])
+
+  const fetchPendingUsers = async () => {
     try {
-      const res = await axios.get("https://ncthackathonportal.onrender.com/groups");
-      setGroups(res.data);
+      const res = await axios.get("https://ncthackathonportal.onrender.com/pending-users")
+      setPendingUsers(res.data)
     } catch (err) {
-      console.error("Error fetching groups:", err);
+      console.error("Error fetching pending users", err)
     }
-  };
+  }
 
-  const fetchPendingParticipations = async () => {
+  const fetchPendingGroups = async () => {
     try {
-      const res = await axios.get("https://ncthackathonportal.onrender.com/participants?isApproved=null");
-      setPendingParticipations(res.data);
+      const res = await axios.get("https://ncthackathonportal.onrender.com/groups")
+      setPendingGroups(res.data.filter((group) => group.pendingApproval))
     } catch (err) {
-      console.error("Error fetching pending participation requests:", err);
+      console.error("Error fetching pending groups", err)
     }
-  };
+  }
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setErrorMessage("");
+  const fetchApprovedUsers = async () => {
     try {
-      await axios.post("https://ncthackathonportal.onrender.com/register", formData);
-      alert("User  registered successfully!");
-      fetchUsers();
-      setFormData({ username: "", email: "", password: "", role: "user" });
+      const res = await axios.get("https://ncthackathonportal.onrender.com/participants")
+      setApprovedUsers(res.data)
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || "Failed to register user");
+      console.error("Error fetching approved users", err)
     }
-  };
+  }
 
-  // Approve participation request
-  const approveParticipation = async (username) => {
+  const fetchApprovedGroups = async () => {
     try {
-      await axios.post("https://ncthackathonportal.onrender.com/approve-participation", { username });
-      alert(`Participation request for ${username} approved.`);
-      fetchPendingParticipations();  // Re-fetch the list of pending participations to update the UI
-      fetchUsers(); // Update user list to reflect changes
+      const res = await axios.get("https://ncthackathonportal.onrender.com/groups")
+      setApprovedGroups(res.data.filter((group) => !group.pendingApproval))
     } catch (err) {
-      console.error('Error approving participation', err);
-      alert('Error approving participation');
+      console.error("Error fetching approved groups", err)
     }
-  };
+  }
 
-  // Reject participation request
-  const rejectParticipation = async (username) => {
+  const fetchSubmissions = async () => {
     try {
-      await axios.post("https://ncthackathonportal.onrender.com/approve-participation", { username, isApproved: false });
-      alert(`Participation request for ${username} rejected.`);
-      fetchPendingParticipations();  // Re-fetch the list of pending participations to update the UI
+      const res = await axios.get("https://ncthackathonportal.onrender.com/api/submissions")
+      setSubmissions(res.data)
     } catch (err) {
-      console.error('Error rejecting participation', err);
-      alert('Error rejecting participation');
+      console.error("Error fetching submissions", err)
     }
-  };
+  }
 
-  // Approve group creation request
-  const approveGroup = async (groupId) => {
+  const handleApproveUser = async (username) => {
+    setLoading(true)
     try {
-      await axios.post("https://ncthackathonportal.onrender.com/approve-group", { groupId });
-      alert(`Group creation request approved.`);
-      fetchGroups(); // Refresh groups list
-    } catch (err) {
-      console.error('Error approving group creation', err);
-    }
-  };
+      await axios.post("https://ncthackathonportal.onrender.com/approve-participation", {
+        username,
+      })
 
-  // Reject group creation request
-  const rejectGroup = async (groupId) => {
-    try {
-      await axios.post("https://ncthackathonportal.onrender.com/approve-group", { groupId, pendingApproval: null });
-      alert(`Group creation request rejected.`);
-      fetchGroups(); // Refresh groups list
+      // Refresh data
+      fetchPendingUsers()
+      fetchApprovedUsers()
+      alert(`User ${username} has been approved for participation.`)
     } catch (err) {
-      console.error('Error rejecting group creation', err);
+      console.error("Error approving user", err)
+      alert(`Failed to approve user: ${err.response?.data?.message || "Unknown error"}`)
+    } finally {
+      setLoading(false)
     }
-  };
+  }
+
+  const handleRejectUser = async (username) => {
+    setLoading(true)
+    try {
+      await axios.post("https://ncthackathonportal.onrender.com/reject-participation", {
+        username,
+      })
+
+      // Refresh data
+      fetchPendingUsers()
+      alert(`User ${username}'s participation request has been rejected.`)
+    } catch (err) {
+      console.error("Error rejecting user", err)
+      alert(`Failed to reject user: ${err.response?.data?.message || "Unknown error"}`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleApproveGroup = async (groupId) => {
+    setLoading(true)
+    try {
+      await axios.post("https://ncthackathonportal.onrender.com/approve-group", {
+        groupId,
+      })
+
+      // Refresh data
+      fetchPendingGroups()
+      fetchApprovedGroups()
+      alert("Group has been approved successfully.")
+    } catch (err) {
+      console.error("Error approving group", err)
+      alert(`Failed to approve group: ${err.response?.data?.message || "Unknown error"}`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleRejectGroup = async (groupId) => {
+    setLoading(true)
+    try {
+      await axios.post("https://ncthackathonportal.onrender.com/reject-group", {
+        groupId,
+      })
+
+      // Refresh data
+      fetchPendingGroups()
+      alert("Group has been rejected.")
+    } catch (err) {
+      console.error("Error rejecting group", err)
+      alert(`Failed to reject group: ${err.response?.data?.message || "Unknown error"}`)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem("authToken")
+    navigate("/", { replace: true })
+  }
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen)
+  }
+
+  const menuItems = [
+    { id: "pending-users", label: "Pending Users", icon: <FaUsers /> },
+    { id: "pending-groups", label: "Pending Groups", icon: <FaUsersCog /> },
+    { id: "approved-users", label: "Approved Users", icon: <FaUserCheck /> },
+    { id: "approved-groups", label: "Approved Groups", icon: <FaUsersCog /> },
+    { id: "submissions", label: "Submissions", icon: <FaFileAlt /> },
+  ]
 
   return (
-    <div className="admin-dashboard">
-      <h2>Admin Dashboard</h2>
+    <div className="admin-dashboard-wrapper">
+      <div className="admin-dashboard-navbar">
+        <div className="admin-dashboard-navbar-left">
+          <button className="admin-dashboard-menu-toggle" onClick={toggleSidebar}>
+            <FaBars />
+          </button>
+          <h2 className="admin-dashboard-title">Admin Dashboard</h2>
+        </div>
 
-      {/* User Registration Form */}
-      <form onSubmit={handleSubmit} className="admin-form">
-        <input
-          type="text"
-          name="username"
-          placeholder="Username"
-          value={formData.username}
-          onChange={handleChange}
-          required
-        />
-        <input
-          type="email"
-          name="email"
-          placeholder="Email"
-          value={formData.email}
-          onChange={handleChange}
-          required
-        />
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          value={formData.password}
-          onChange={handleChange}
-          required
-        />
-        <select name="role" value={formData.role} onChange={handleChange}>
-          <option value="user">User </option>
-          <option value="judge">Judge</option>
-          <option value="mentor">Mentor</option>
-          <option value="admin">Admin</option>
-        </select>
-        {errorMessage && <p className="error-message">{errorMessage}</p>}
-        <button type="submit">Register User</button>
-      </form>
+        <div className="admin-dashboard-navbar-right">
+          <span className="admin-dashboard-username">{username}</span>
+          <button className="admin-dashboard-logout" onClick={handleLogout}>
+            <FaSignOutAlt /> Logout
+          </button>
+        </div>
+      </div>
 
-      {/* Registered Users */}
-      <h3>Registered Users</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Username</th>
-            <th>Email</th>
-            <th>Role</th>
-          </tr>
-        </thead>
-        <tbody>
-          {users.map((user) => (
-            <tr key={user._id}>
-              <td>{user.username}</td>
-              <td>{user.email}</td>
-              <td>{user.role}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="admin-dashboard-main">
+        <div className={`admin-dashboard-sidebar ${sidebarOpen ? "open" : "closed"}`}>
+          <ul className="admin-dashboard-sidebar-menu">
+            {menuItems.map((item) => (
+              <li key={item.id} className={activeTab === item.id ? "active" : ""} onClick={() => setActiveTab(item.id)}>
+                <span className="admin-dashboard-menu-icon">{item.icon}</span>
+                <span className="admin-dashboard-menu-text">{item.label}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
 
-      {/* Pending Participation Requests */}
-      <h3>Pending Participation Requests</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Username</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {pendingParticipations.map((user) => (
-            <tr key={user._id}>
-              <td>{user.username}</td>
-              <td>
-                <button onClick={() => approveParticipation(user.username)}>Approve</button>
-                <button onClick={() => rejectParticipation(user.username)}>Reject</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+        <div className="admin-dashboard-content">
+          <div className="admin-dashboard-stats">
+            <div className="admin-dashboard-stat-card">
+              <div className="admin-dashboard-stat-icon purple">
+                <FaUsers />
+              </div>
+              <div className="admin-dashboard-stat-title">Pending Users</div>
+              <div className="admin-dashboard-stat-value">{pendingUsers.length}</div>
+            </div>
+            <div className="admin-dashboard-stat-card">
+              <div className="admin-dashboard-stat-icon blue">
+                <FaUsersCog />
+              </div>
+              <div className="admin-dashboard-stat-title">Pending Groups</div>
+              <div className="admin-dashboard-stat-value">{pendingGroups.length}</div>
+            </div>
+            <div className="admin-dashboard-stat-card">
+              <div className="admin-dashboard-stat-icon green">
+                <FaUserCheck />
+              </div>
+              <div className="admin-dashboard-stat-title">Approved Users</div>
+              <div className="admin-dashboard-stat-value">{approvedUsers.length}</div>
+            </div>
+            <div className="admin-dashboard-stat-card">
+              <div className="admin-dashboard-stat-icon amber">
+                <FaFileAlt />
+              </div>
+              <div className="admin-dashboard-stat-title">Total Submissions</div>
+              <div className="admin-dashboard-stat-value">{submissions.length}</div>
+            </div>
+          </div>
+          {activeTab === "pending-users" && (
+            <div className="admin-dashboard-section">
+              <div className="admin-dashboard-section-header">
+                <h2>Pending User Approvals</h2>
+              </div>
+              <div className="admin-dashboard-section-body">
+                {pendingUsers.length > 0 ? (
+                  <div className="admin-dashboard-table-container">
+                    <table className="admin-dashboard-table">
+                      <thead>
+                        <tr>
+                          <th>Username</th>
+                          <th>Email</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pendingUsers.map((user) => (
+                          <tr key={user.username}>
+                            <td>{user.username}</td>
+                            <td>{user.email}</td>
+                            <td className="admin-dashboard-actions">
+                              <button
+                                className="admin-dashboard-approve-btn"
+                                onClick={() => handleApproveUser(user.username)}
+                                disabled={loading}
+                              >
+                                <FaCheckCircle /> Approve
+                              </button>
+                              <button
+                                className="admin-dashboard-reject-btn"
+                                onClick={() => handleRejectUser(user.username)}
+                                disabled={loading}
+                              >
+                                <FaTimesCircle /> Reject
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="admin-dashboard-empty-state">No pending user approvals.</p>
+                )}
+              </div>
+            </div>
+          )}
 
-      {/* Pending Group Creation Requests */}
-      <h3>Pending Group Creation Requests</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Group Name</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {groups.filter(group => group.pendingApproval === true).map((group) => (
-            <tr key={group._id}>
-              <td>{group.name}</td>
-              <td>
-                <button onClick={() => approveGroup(group._id)}>Approve</button>
-                <button onClick={() => rejectGroup(group._id)}>Reject</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+          {activeTab === "pending-groups" && (
+            <div className="admin-dashboard-section">
+              <div className="admin-dashboard-section-header">
+                <h2>Pending Group Approvals</h2>
+              </div>
+              <div className="admin-dashboard-section-body">
+                {pendingGroups.length > 0 ? (
+                  <div className="admin-dashboard-table-container">
+                    <table className="admin-dashboard-table">
+                      <thead>
+                        <tr>
+                          <th>Group Name</th>
+                          <th>Created By</th>
+                          <th>Members</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pendingGroups.map((group) => (
+                          <tr key={group._id}>
+                            <td>{group.name}</td>
+                            <td>{group.createdBy}</td>
+                            <td>{group.members.join(", ")}</td>
+                            <td className="admin-dashboard-actions">
+                              <button
+                                className="admin-dashboard-approve-btn"
+                                onClick={() => handleApproveGroup(group._id)}
+                                disabled={loading}
+                              >
+                                <FaCheckCircle /> Approve
+                              </button>
+                              <button
+                                className="admin-dashboard-reject-btn"
+                                onClick={() => handleRejectGroup(group._id)}
+                                disabled={loading}
+                              >
+                                <FaTimesCircle /> Reject
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="admin-dashboard-empty-state">No pending group approvals.</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === "approved-users" && (
+            <div className="admin-dashboard-section">
+              <div className="admin-dashboard-section-header">
+                <h2>Approved Users</h2>
+              </div>
+              <div className="admin-dashboard-section-body">
+                {approvedUsers.length > 0 ? (
+                  <div className="admin-dashboard-table-container">
+                    <table className="admin-dashboard-table">
+                      <thead>
+                        <tr>
+                          <th>Username</th>
+                          <th>Email</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {approvedUsers.map((user) => (
+                          <tr key={user.username}>
+                            <td>{user.username}</td>
+                            <td>{user.email}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="admin-dashboard-empty-state">No approved users yet.</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === "approved-groups" && (
+            <div className="admin-dashboard-section">
+              <div className="admin-dashboard-section-header">
+                <h2>Approved Groups</h2>
+              </div>
+              <div className="admin-dashboard-section-body">
+                {approvedGroups.length > 0 ? (
+                  <div className="admin-dashboard-table-container">
+                    <table className="admin-dashboard-table">
+                      <thead>
+                        <tr>
+                          <th>Group Name</th>
+                          <th>Created By</th>
+                          <th>Members</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {approvedGroups.map((group) => (
+                          <tr key={group._id}>
+                            <td>{group.name}</td>
+                            <td>{group.createdBy}</td>
+                            <td>{group.members.join(", ")}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="admin-dashboard-empty-state">No approved groups yet.</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === "submissions" && (
+            <div className="admin-dashboard-section">
+              <div className="admin-dashboard-section-header">
+                <h2>All Submissions</h2>
+              </div>
+              <div className="admin-dashboard-section-body">
+                {submissions.length > 0 ? (
+                  <div className="admin-dashboard-table-container">
+                    <table className="admin-dashboard-table">
+                      <thead>
+                        <tr>
+                          <th>Filename</th>
+                          <th>Uploaded By</th>
+                          <th>Group</th>
+                          <th>Date</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {submissions.map((submission) => (
+                          <tr key={submission._id}>
+                            <td>{submission.filename}</td>
+                            <td>{submission.uploadedBy}</td>
+                            <td>{submission.groupName}</td>
+                            <td>{new Date(submission.date).toLocaleString()}</td>
+                            <td>
+                              <a
+                                href={`https://ncthackathonportal.onrender.com/download/${submission.filename}`}
+                                className="admin-dashboard-download-btn"
+                              >
+                                Download
+                              </a>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="admin-dashboard-empty-state">No submissions yet.</p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
-  );
-};
+  )
+}
 
-export default AdminDashboard;
+export default AdminDashboard
+
