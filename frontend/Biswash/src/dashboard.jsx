@@ -21,6 +21,7 @@ import {
   FaCheckCircle,
   FaInfoCircle,
   FaExclamationTriangle,
+  FaMegaphone,
 } from "react-icons/fa"
 import { MdGroupAdd } from "react-icons/md"
 import { HiUserGroup } from "react-icons/hi2"
@@ -56,6 +57,13 @@ const Dashboard = () => {
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [showNotifications, setShowNotifications] = useState(false)
+  const [selectedGroupForChanges, setSelectedGroupForChanges] = useState(null)
+  const [membersToAdd, setMembersToAdd] = useState([])
+  const [membersToRemove, setMembersToRemove] = useState([])
+  const [showAddMembersModal, setShowAddMembersModal] = useState(false)
+  const [showRemoveMembersModal, setShowRemoveMembersModal] = useState(false)
+  const [pendingGroupChanges, setPendingGroupChanges] = useState([])
+  const [changeRequestSuccess, setChangeRequestSuccess] = useState("")
 
   const dropdownRef = useRef(null)
   const sidebarRef = useRef(null)
@@ -248,11 +256,7 @@ const Dashboard = () => {
   }
 
   const handleAddMember = (member) => {
-    if (!isGroupApproved(selectedGroup)) {
-      alert("Group is awaiting approval. You cannot add members at this time.")
-      return
-    }
-    // Add member to group logic here
+    // Remove the isGroupApproved check that was preventing adding members during creation
     if (newGroup.members.includes(member)) {
       setNewGroup({
         ...newGroup,
@@ -448,6 +452,97 @@ const Dashboard = () => {
     }
   }, [username])
 
+  const fetchPendingGroupChanges = async () => {
+    try {
+      const res = await axios.get(
+        `https://ncthackathonportal.onrender.com/group-changes?groupId=${selectedGroupForChanges?._id}`,
+      )
+      setPendingGroupChanges(res.data.filter((change) => change.status === "pending"))
+    } catch (err) {
+      console.error("Error fetching pending group changes", err)
+    }
+  }
+
+  useEffect(() => {
+    if (selectedGroupForChanges) {
+      fetchPendingGroupChanges()
+    }
+  }, [selectedGroupForChanges])
+
+  const handleAddMembersToExistingGroup = async () => {
+    if (!selectedGroupForChanges || membersToAdd.length === 0) {
+      return
+    }
+
+    try {
+      const res = await axios.post("https://ncthackathonportal.onrender.com/request-group-change", {
+        groupId: selectedGroupForChanges._id,
+        groupName: selectedGroupForChanges.name,
+        requestedBy: username,
+        changeType: "add",
+        members: membersToAdd,
+      })
+
+      setChangeRequestSuccess(res.data.message)
+      setMembersToAdd([])
+      setShowAddMembersModal(false)
+      fetchPendingGroupChanges()
+
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setChangeRequestSuccess("")
+      }, 3000)
+    } catch (err) {
+      console.error("Error requesting to add members", err)
+      alert(err.response?.data?.message || "Failed to submit request. Please try again.")
+    }
+  }
+
+  const handleRemoveMembersFromExistingGroup = async () => {
+    if (!selectedGroupForChanges || membersToRemove.length === 0) {
+      return
+    }
+
+    try {
+      const res = await axios.post("https://ncthackathonportal.onrender.com/request-group-change", {
+        groupId: selectedGroupForChanges._id,
+        groupName: selectedGroupForChanges.name,
+        requestedBy: username,
+        changeType: "remove",
+        members: membersToRemove,
+      })
+
+      setChangeRequestSuccess(res.data.message)
+      setMembersToRemove([])
+      setShowRemoveMembersModal(false)
+      fetchPendingGroupChanges()
+
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setChangeRequestSuccess("")
+      }, 3000)
+    } catch (err) {
+      console.error("Error requesting to remove members", err)
+      alert(err.response?.data?.message || "Failed to submit request. Please try again.")
+    }
+  }
+
+  const handleSelectMemberToAdd = (member) => {
+    if (membersToAdd.includes(member)) {
+      setMembersToAdd(membersToAdd.filter((m) => m !== member))
+    } else {
+      setMembersToAdd([...membersToAdd, member])
+    }
+  }
+
+  const handleSelectMemberToRemove = (member) => {
+    if (membersToRemove.includes(member)) {
+      setMembersToRemove(membersToRemove.filter((m) => m !== member))
+    } else {
+      setMembersToRemove([...membersToRemove, member])
+    }
+  }
+
   return (
     <div className="dashboard-wrapper">
       <div className="dashboard-navbar">
@@ -613,6 +708,50 @@ const Dashboard = () => {
                                 ))}
                               </ul>
                             </div>
+
+                            {/* Add group management buttons */}
+                            {!group.pendingApproval && (
+                              <div className="dashboard-group-actions">
+                                <button
+                                  className="dashboard-button dashboard-button-small"
+                                  onClick={() => {
+                                    setSelectedGroupForChanges(group)
+                                    setShowAddMembersModal(true)
+                                  }}
+                                >
+                                  Add Members
+                                </button>
+                                <button
+                                  className="dashboard-button dashboard-button-small dashboard-button-danger"
+                                  onClick={() => {
+                                    setSelectedGroupForChanges(group)
+                                    setShowRemoveMembersModal(true)
+                                  }}
+                                >
+                                  Remove Members
+                                </button>
+                              </div>
+                            )}
+
+                            {/* Show pending changes for this group */}
+                            {pendingGroupChanges.length > 0 && selectedGroupForChanges?._id === group._id && (
+                              <div className="dashboard-pending-changes">
+                                <h4>Pending Changes:</h4>
+                                <ul className="dashboard-pending-changes-list">
+                                  {pendingGroupChanges.map((change) => (
+                                    <li key={change._id} className="dashboard-pending-change-item">
+                                      <span className="dashboard-pending-change-type">
+                                        {change.changeType === "add" ? "Adding" : "Removing"}:
+                                      </span>
+                                      <span className="dashboard-pending-change-members">
+                                        {change.members.join(", ")}
+                                      </span>
+                                      <span className="dashboard-pending-change-status">(Awaiting admin approval)</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -881,6 +1020,164 @@ const Dashboard = () => {
           )}
         </div>
       </div>
+
+      {/* Add Members Modal */}
+      {showAddMembersModal && selectedGroupForChanges && (
+        <div className="dashboard-modal-overlay">
+          <div className="dashboard-modal">
+            <div className="dashboard-modal-header">
+              <h3>Add Members to {selectedGroupForChanges.name}</h3>
+              <button
+                className="dashboard-modal-close"
+                onClick={() => {
+                  setShowAddMembersModal(false)
+                  setMembersToAdd([])
+                }}
+              >
+                ×
+              </button>
+            </div>
+            <div className="dashboard-modal-body">
+              <p>Select members to add to your group:</p>
+
+              <div className="dashboard-modal-members-list">
+                {participants
+                  .filter((p) => p.username !== username && !selectedGroupForChanges.members.includes(p.username))
+                  .map((participant) => {
+                    const isInGroup = isUserInAnyGroup(participant.username)
+
+                    return (
+                      <div key={participant.username} className="dashboard-modal-member-item">
+                        <div className="dashboard-participant-checkbox">
+                          <input
+                            type="checkbox"
+                            id={`add-member-${participant.username}`}
+                            checked={membersToAdd.includes(participant.username)}
+                            onChange={() => handleSelectMemberToAdd(participant.username)}
+                            disabled={isInGroup}
+                          />
+                          <label
+                            htmlFor={`add-member-${participant.username}`}
+                            className={isInGroup ? "dashboard-member-disabled" : ""}
+                          >
+                            <div className="dashboard-participant-info">
+                              <div className="dashboard-member-avatar">
+                                {participant.username.charAt(0).toUpperCase()}
+                              </div>
+                              <div className="dashboard-participant-details">
+                                <span className="dashboard-participant-name">{participant.username}</span>
+                                <span className="dashboard-participant-email">{participant.email}</span>
+                              </div>
+                            </div>
+                            {isInGroup && <span className="dashboard-participant-status">Already in a group</span>}
+                          </label>
+                        </div>
+                      </div>
+                    )
+                  })}
+              </div>
+
+              {participants.filter(
+                (p) =>
+                  p.username !== username &&
+                  !selectedGroupForChanges.members.includes(p.username) &&
+                  !isUserInAnyGroup(p.username),
+              ).length === 0 && <p className="dashboard-empty-state">No available members to add.</p>}
+            </div>
+            <div className="dashboard-modal-footer">
+              <button
+                className="dashboard-button dashboard-button-secondary"
+                onClick={() => {
+                  setShowAddMembersModal(false)
+                  setMembersToAdd([])
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                className="dashboard-button"
+                onClick={handleAddMembersToExistingGroup}
+                disabled={membersToAdd.length === 0}
+              >
+                Submit for Approval
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Remove Members Modal */}
+      {showRemoveMembersModal && selectedGroupForChanges && (
+        <div className="dashboard-modal-overlay">
+          <div className="dashboard-modal">
+            <div className="dashboard-modal-header">
+              <h3>Remove Members from {selectedGroupForChanges.name}</h3>
+              <button
+                className="dashboard-modal-close"
+                onClick={() => {
+                  setShowRemoveMembersModal(false)
+                  setMembersToRemove([])
+                }}
+              >
+                ×
+              </button>
+            </div>
+            <div className="dashboard-modal-body">
+              <p>Select members to remove from your group:</p>
+
+              <div className="dashboard-modal-members-list">
+                {selectedGroupForChanges.members
+                  .filter((member) => member !== username && member !== selectedGroupForChanges.createdBy)
+                  .map((member) => (
+                    <div key={member} className="dashboard-modal-member-item">
+                      <div className="dashboard-participant-checkbox">
+                        <input
+                          type="checkbox"
+                          id={`remove-member-${member}`}
+                          checked={membersToRemove.includes(member)}
+                          onChange={() => handleSelectMemberToRemove(member)}
+                        />
+                        <label htmlFor={`remove-member-${member}`}>
+                          <div className="dashboard-participant-info">
+                            <div className="dashboard-member-avatar">{member.charAt(0).toUpperCase()}</div>
+                            <div className="dashboard-participant-details">
+                              <span className="dashboard-participant-name">{member}</span>
+                            </div>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+
+              {selectedGroupForChanges.members.filter(
+                (member) => member !== username && member !== selectedGroupForChanges.createdBy,
+              ).length === 0 && <p className="dashboard-empty-state">No members available to remove.</p>}
+            </div>
+            <div className="dashboard-modal-footer">
+              <button
+                className="dashboard-button dashboard-button-secondary"
+                onClick={() => {
+                  setShowRemoveMembersModal(false)
+                  setMembersToRemove([])
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                className="dashboard-button dashboard-button-danger"
+                onClick={handleRemoveMembersFromExistingGroup}
+                disabled={membersToRemove.length === 0}
+              >
+                Submit for Approval
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success message for change requests */}
+      {changeRequestSuccess && <div className="dashboard-success-message">{changeRequestSuccess}</div>}
     </div>
   )
 }

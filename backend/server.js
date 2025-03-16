@@ -618,6 +618,202 @@ app.get("/unread-notification-count", async (req, res) => {
   }
 })
 
+// Group Change Request Schema
+const groupChangeSchema = new mongoose.Schema({
+  groupId: { type: mongoose.Schema.Types.ObjectId, ref: "Group", required: true },
+  groupName: { type: String, required: true },
+  requestedBy: { type: String, required: true },
+  changeType: { type: String, enum: ["add", "remove"], required: true },
+  members: [{ type: String }], // Array of usernames to add or remove
+  status: { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
+  createdAt: { type: Date, default: Date.now },
+})
+
+const GroupChange = mongoose.model("GroupChange", groupChangeSchema)
+
+// Request Group Member Change
+app.post("/request-group-change", async (req, res) => {
+  const { groupId, groupName, requestedBy, changeType, members } = req.body
+
+  if (!groupId || !groupName || !requestedBy || !changeType || !members || !members.length) {
+    return res.status(400).json({ message: "Missing required fields" })
+  }
+
+  try {
+    // Check if the group exists
+    const group = await Group.findById(groupId)
+    if (!group) {
+      return res.status(404).json({ message: "Group not found" })
+    }
+
+    // Check if the user requesting the change is a member of the group
+    if (!group.members.includes(requestedBy)) {
+      return res.status(403).json({ message: "You must be a member of the group to request changes" })
+    }
+
+    // Create a new change request
+    const changeRequest = new GroupChange({
+      groupId,
+      groupName,
+      requestedBy,
+      changeType,
+      members,
+      status: "pending",
+    })
+
+    await changeRequest.save()
+
+    // Create a notification for admins
+    const notification = new Notification({
+      message: `New group member ${changeType} request for "${groupName}" by ${requestedBy}`,
+      type: "info",
+      sender: requestedBy,
+      senderRole: "user",
+      isGlobal: false,
+      recipients: (await User.find({ role: "admin" })).map((admin) => admin.username),
+      readBy: [],
+    })
+
+    await notification.save()
+
+    res.status(201).json({
+      message: `Request to ${changeType} members has been submitted for admin approval`,
+      changeRequest,
+    })
+  } catch (error) {
+    console.error("Error requesting group change:", error)
+    res.status(500).json({ message: "Error requesting group change", error })
+  }
+})
+
+// Get Pending Group Changes
+app.get("/pending-group-changes", async (req, res) => {
+  try {
+    const pendingChanges = await GroupChange.find({ status: "pending" })
+    res.status(200).json(pendingChanges)
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching pending group changes", error })
+  }
+})
+
+// Approve Group Change
+app.post("/approve-group-change", async (req, res) => {
+  const { changeId } = req.body
+
+  if (!changeId) {
+    return res.status(400).json({ message: "Change ID is required" })
+  }
+
+  try {
+    // Find the change request
+    const changeRequest = await GroupChange.findById(changeId)
+    if (!changeRequest) {
+      return res.status(404).json({ message: "Change request not found" })
+    }
+
+    // Find the group
+    const group = await Group.findById(changeRequest.groupId)
+    if (!group) {
+      return res.status(404).json({ message: "Group not found" })
+    }
+
+    // Apply the changes
+    if (changeRequest.changeType === "add") {
+      // Add members that aren't already in the group
+      const newMembers = changeRequest.members.filter((member) => !group.members.includes(member))
+      group.members = [...group.members, ...newMembers]
+    } else if (changeRequest.changeType === "remove") {
+      // Remove members
+      group.members = group.members.filter((member) => !changeRequest.members.includes(member))
+    }
+
+    await group.save()
+
+    // Update the change request status
+    changeRequest.status = "approved"
+    await changeRequest.save()
+
+    // Create a notification for the requester
+    const notification = new Notification({
+      message: `Your request to ${changeRequest.changeType} members in "${group.name}" has been approved`,
+      type: "success",
+      sender: "Admin",
+      senderRole: "admin",
+      isGlobal: false,
+      recipients: [changeRequest.requestedBy],
+      readBy: [],
+    })
+
+    await notification.save()
+
+    res.status(200).json({
+      message: "Group change approved and applied successfully",
+      group,
+    })
+  } catch (error) {
+    console.error("Error approving group change:", error)
+    res.status(500).json({ message: "Error approving group change", error })
+  }
+})
+
+// Reject Group Change
+app.post("/reject-group-change", async (req, res) => {
+  const { changeId } = req.body
+
+  if (!changeId) {
+    return res.status(400).json({ message: "Change ID is required" })
+  }
+
+  try {
+    // Find the change request
+    const changeRequest = await GroupChange.findById(changeId)
+    if (!changeRequest) {
+      return res.status(404).json({ message: "Change request not found" })
+    }
+
+    // Update the change request status
+    changeRequest.status = "rejected"
+    await changeRequest.save()
+
+    // Create a notification for the requester
+    const notification = new Notification({
+      message: `Your request to ${changeRequest.changeType} members in "${changeRequest.groupName}" has been rejected`,
+      type: "warning",
+      sender: "Admin",
+      senderRole: "admin",
+      isGlobal: false,
+      recipients: [changeRequest.requestedBy],
+      readBy: [],
+    })
+
+    await notification.save()
+
+    res.status(200).json({
+      message: "Group change rejected",
+      changeRequest,
+    })
+  } catch (error) {
+    console.error("Error rejecting group change:", error)
+    res.status(500).json({ message: "Error rejecting group change", error })
+  }
+})
+
+// Get Group Changes for a specific group
+app.get("/group-changes", async (req, res) => {
+  const { groupId } = req.query
+
+  if (!groupId) {
+    return res.status(400).json({ message: "Group ID is required" })
+  }
+
+  try {
+    const changes = await GroupChange.find({ groupId }).sort({ createdAt: -1 })
+    res.status(200).json(changes)
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching group changes", error })
+  }
+})
+
 // Start Server
 const PORT = process.env.PORT || 5000
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`))

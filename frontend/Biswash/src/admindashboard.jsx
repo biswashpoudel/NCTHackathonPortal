@@ -16,7 +16,7 @@ import {
   FaBell,
   FaPlus,
 } from "react-icons/fa"
-import "./admindashboard.css" // You'll need to create this CSS file
+import "./admin-dashboard.css" // You'll need to create this CSS file
 
 const AdminDashboard = () => {
   const location = useLocation()
@@ -40,6 +40,8 @@ const AdminDashboard = () => {
     type: "info",
   })
   const [notificationSuccess, setNotificationSuccess] = useState("")
+  const [groupChangeRequests, setGroupChangeRequests] = useState([])
+  const [groupChangeLoading, setGroupChangeLoading] = useState(false)
 
   useEffect(() => {
     if (!username) {
@@ -53,6 +55,7 @@ const AdminDashboard = () => {
     fetchApprovedGroups()
     fetchSubmissions()
     fetchLeaderboard()
+    fetchGroupChangeRequests() // Add this line
   }, [username, navigate])
 
   const fetchPendingUsers = async () => {
@@ -231,12 +234,59 @@ const AdminDashboard = () => {
   const menuItems = [
     { id: "pending-users", label: "Pending Users", icon: <FaUsers /> },
     { id: "pending-groups", label: "Pending Groups", icon: <FaUsersCog /> },
+    { id: "group-changes", label: "Group Changes", icon: <FaUsersCog /> }, // Add this line
     { id: "approved-users", label: "Approved Users", icon: <FaUserCheck /> },
     { id: "approved-groups", label: "Approved Groups", icon: <FaUsersCog /> },
     { id: "submissions", label: "Submissions", icon: <FaFileAlt /> },
     { id: "leaderboard", label: "Leaderboard", icon: <FaMedal /> },
     { id: "notifications", label: "Notifications", icon: <FaBell /> },
   ]
+
+  const fetchGroupChangeRequests = async () => {
+    try {
+      const res = await axios.get("https://ncthackathonportal.onrender.com/pending-group-changes")
+      setGroupChangeRequests(res.data)
+    } catch (err) {
+      console.error("Error fetching group change requests", err)
+    }
+  }
+
+  const handleApproveGroupChange = async (changeId) => {
+    setGroupChangeLoading(true)
+    try {
+      await axios.post("https://ncthackathonportal.onrender.com/approve-group-change", {
+        changeId,
+      })
+
+      // Refresh data
+      fetchGroupChangeRequests()
+      fetchApprovedGroups()
+      alert("Group change has been approved successfully.")
+    } catch (err) {
+      console.error("Error approving group change", err)
+      alert(`Failed to approve group change: ${err.response?.data?.message || "Unknown error"}`)
+    } finally {
+      setGroupChangeLoading(false)
+    }
+  }
+
+  const handleRejectGroupChange = async (changeId) => {
+    setGroupChangeLoading(true)
+    try {
+      await axios.post("https://ncthackathonportal.onrender.com/reject-group-change", {
+        changeId,
+      })
+
+      // Refresh data
+      fetchGroupChangeRequests()
+      alert("Group change has been rejected.")
+    } catch (err) {
+      console.error("Error rejecting group change", err)
+      alert(`Failed to reject group change: ${err.response?.data?.message || "Unknown error"}`)
+    } finally {
+      setGroupChangeLoading(false)
+    }
+  }
 
   return (
     <div className="admin-dashboard-wrapper">
@@ -598,6 +648,64 @@ const AdminDashboard = () => {
                 <p className="admin-dashboard-info">
                   Notifications will be sent to all users and will appear in their notification panel.
                 </p>
+              </div>
+            </div>
+          )}
+          {activeTab === "group-changes" && (
+            <div className="admin-dashboard-section">
+              <div className="admin-dashboard-section-header">
+                <h2>Pending Group Member Changes</h2>
+              </div>
+              <div className="admin-dashboard-section-body">
+                {groupChangeRequests.length > 0 ? (
+                  <div className="admin-dashboard-table-container">
+                    <table className="admin-dashboard-table">
+                      <thead>
+                        <tr>
+                          <th>Group Name</th>
+                          <th>Requested By</th>
+                          <th>Change Type</th>
+                          <th>Members</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {groupChangeRequests.map((change) => (
+                          <tr key={change._id}>
+                            <td>{change.groupName}</td>
+                            <td>{change.requestedBy}</td>
+                            <td>
+                              <span
+                                className={`admin-dashboard-status admin-dashboard-status-${change.changeType === "add" ? "approved" : "rejected"}`}
+                              >
+                                {change.changeType === "add" ? "Add Members" : "Remove Members"}
+                              </span>
+                            </td>
+                            <td>{change.members.join(", ")}</td>
+                            <td className="admin-dashboard-actions">
+                              <button
+                                className="admin-dashboard-approve-btn"
+                                onClick={() => handleApproveGroupChange(change._id)}
+                                disabled={groupChangeLoading}
+                              >
+                                <FaCheckCircle /> Approve
+                              </button>
+                              <button
+                                className="admin-dashboard-reject-btn"
+                                onClick={() => handleRejectGroupChange(change._id)}
+                                disabled={groupChangeLoading}
+                              >
+                                <FaTimesCircle /> Reject
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="admin-dashboard-empty-state">No pending group member changes.</p>
+                )}
               </div>
             </div>
           )}

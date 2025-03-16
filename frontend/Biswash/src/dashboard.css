@@ -861,6 +861,164 @@
   font-size: 0.9rem;
 }
 
+/* Group Management */
+.dashboard-group-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.dashboard-button-small {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8rem;
+}
+
+.dashboard-button-secondary {
+  background-color: #f3f4f6;
+  color: #1f2937;
+  border: 1px solid #d1d5db;
+}
+
+.dashboard-button-secondary:hover {
+  background-color: #e5e7eb;
+}
+
+.dashboard-button-danger {
+  background-color: #ef4444;
+}
+
+.dashboard-button-danger:hover {
+  background-color: #dc2626;
+}
+
+/* Pending Changes */
+.dashboard-pending-changes {
+  margin-top: 1rem;
+  background-color: #fffbeb;
+  border-radius: 6px;
+  padding: 1rem;
+  border-left: 3px solid #f59e0b;
+}
+
+.dashboard-pending-changes h4 {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.9rem;
+  color: #92400e;
+  font-weight: 600;
+}
+
+.dashboard-pending-changes-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.dashboard-pending-change-item {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #fef3c7;
+  font-size: 0.9rem;
+}
+
+.dashboard-pending-change-item:last-child {
+  border-bottom: none;
+}
+
+.dashboard-pending-change-type {
+  font-weight: 600;
+  margin-right: 0.5rem;
+}
+
+.dashboard-pending-change-members {
+  color: #1f2937;
+}
+
+.dashboard-pending-change-status {
+  display: block;
+  font-size: 0.8rem;
+  color: #92400e;
+  font-style: italic;
+  margin-top: 0.25rem;
+}
+
+/* Modal Styles */
+.dashboard-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.dashboard-modal {
+  background-color: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.dashboard-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.dashboard-modal-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #1f2937;
+}
+
+.dashboard-modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.dashboard-modal-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  max-height: 60vh;
+}
+
+.dashboard-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.dashboard-modal-members-list {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  margin-top: 1rem;
+}
+
+.dashboard-modal-member-item {
+  padding: 0.75rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.dashboard-modal-member-item:last-child {
+  border-bottom: none;
+}
+
 /* Responsive Adjustments */
 @media (max-width: 768px) {
   .dashboard-sidebar {
