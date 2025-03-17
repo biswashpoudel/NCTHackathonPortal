@@ -15,8 +15,10 @@ import {
   FaMedal,
   FaBell,
   FaPlus,
+  FaUserPlus,
+  FaTrashAlt,
 } from "react-icons/fa"
-import "./admin-dashboard.css" // You'll need to create this CSS file
+import "./admindashboard.css" // You'll need to create this CSS file
 
 const AdminDashboard = () => {
   const location = useLocation()
@@ -42,6 +44,19 @@ const AdminDashboard = () => {
   const [notificationSuccess, setNotificationSuccess] = useState("")
   const [groupChangeRequests, setGroupChangeRequests] = useState([])
   const [groupChangeLoading, setGroupChangeLoading] = useState(false)
+  // Add these state variables after the existing state declarations
+  const [showUserRegistrationForm, setShowUserRegistrationForm] = useState(false)
+  const [allUsers, setAllUsers] = useState([])
+  const [userRegistrationData, setUserRegistrationData] = useState({
+    username: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    role: "user",
+  })
+  const [userRegistrationError, setUserRegistrationError] = useState("")
+  const [userRegistrationSuccess, setUserRegistrationSuccess] = useState("")
+  const [usernameError, setUsernameError] = useState("")
 
   useEffect(() => {
     if (!username) {
@@ -240,6 +255,7 @@ const AdminDashboard = () => {
     { id: "submissions", label: "Submissions", icon: <FaFileAlt /> },
     { id: "leaderboard", label: "Leaderboard", icon: <FaMedal /> },
     { id: "notifications", label: "Notifications", icon: <FaBell /> },
+    { id: "user-management", label: "User Management", icon: <FaUserPlus /> }, // Add this line
   ]
 
   const fetchGroupChangeRequests = async () => {
@@ -287,6 +303,97 @@ const AdminDashboard = () => {
       setGroupChangeLoading(false)
     }
   }
+
+  // Add these functions after the existing functions but before the return statement
+
+  const fetchAllUsers = async () => {
+    try {
+      const res = await axios.get("https://ncthackathonportal.onrender.com/all-users")
+      setAllUsers(res.data)
+    } catch (err) {
+      console.error("Error fetching all users", err)
+    }
+  }
+
+  const handleUserRegistrationChange = (e) => {
+    const { name, value } = e.target
+    setUserRegistrationData({ ...userRegistrationData, [name]: value })
+
+    if (name === "username") {
+      const usernamePattern = /^[a-zA-Z0-9]([a-zA-Z0-9_-]{1,18}[a-zA-Z0-9])?$/
+
+      if (!usernamePattern.test(value)) {
+        setUsernameError(
+          "Username must be 3-20 characters, containing only letters, numbers, underscores (_), and hyphens (-). No symbols at the start or end.",
+        )
+      } else {
+        setUsernameError("")
+      }
+    }
+  }
+
+  const handleUserRegistrationSubmit = async (e) => {
+    e.preventDefault()
+    setUserRegistrationError("")
+    setUserRegistrationSuccess("")
+
+    if (userRegistrationData.password !== userRegistrationData.confirmPassword) {
+      setUserRegistrationError("Passwords do not match!")
+      return
+    }
+
+    try {
+      const res = await axios.post("https://ncthackathonportal.onrender.com/register", {
+        username: userRegistrationData.username,
+        email: userRegistrationData.email,
+        password: userRegistrationData.password,
+        role: userRegistrationData.role,
+      })
+
+      setUserRegistrationSuccess("User registered successfully!")
+      setUserRegistrationData({
+        username: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+        role: "user",
+      })
+      fetchAllUsers()
+
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setUserRegistrationSuccess("")
+      }, 3000)
+    } catch (err) {
+      setUserRegistrationError(err.response?.data?.message || "Error registering user")
+    }
+  }
+
+  const handleDeleteUser = async (userId, username) => {
+    if (!confirm(`Are you sure you want to delete user ${username}?`)) {
+      return
+    }
+
+    try {
+      await axios.delete(`https://ncthackathonportal.onrender.com/users/${userId}`)
+      setUserRegistrationSuccess("User deleted successfully!")
+      fetchAllUsers()
+
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setUserRegistrationSuccess("")
+      }, 3000)
+    } catch (err) {
+      setUserRegistrationError(err.response?.data?.message || "Error deleting user")
+    }
+  }
+
+  // Add this to the useEffect that runs when the component mounts
+  useEffect(() => {
+    if (activeTab === "user-management") {
+      fetchAllUsers()
+    }
+  }, [activeTab])
 
   return (
     <div className="admin-dashboard-wrapper">
@@ -706,6 +813,135 @@ const AdminDashboard = () => {
                 ) : (
                   <p className="admin-dashboard-empty-state">No pending group member changes.</p>
                 )}
+              </div>
+            </div>
+          )}
+          {activeTab === "user-management" && (
+            <div className="admin-dashboard-section">
+              <div className="admin-dashboard-section-header">
+                <h2>User Management</h2>
+                <button
+                  className="admin-dashboard-button"
+                  onClick={() => setShowUserRegistrationForm(!showUserRegistrationForm)}
+                >
+                  {showUserRegistrationForm ? "Hide Form" : "Register New User"}
+                </button>
+              </div>
+              <div className="admin-dashboard-section-body">
+                {userRegistrationSuccess && (
+                  <div className="admin-dashboard-success-message">{userRegistrationSuccess}</div>
+                )}
+                {userRegistrationError && <div className="admin-dashboard-error-message">{userRegistrationError}</div>}
+
+                {showUserRegistrationForm && (
+                  <form onSubmit={handleUserRegistrationSubmit} className="admin-dashboard-form">
+                    <div className="admin-dashboard-form-group">
+                      <label>Username:</label>
+                      <input
+                        type="text"
+                        name="username"
+                        value={userRegistrationData.username}
+                        onChange={handleUserRegistrationChange}
+                        required
+                      />
+                      {usernameError && <p className="admin-dashboard-form-error">{usernameError}</p>}
+                    </div>
+                    <div className="admin-dashboard-form-group">
+                      <label>Email:</label>
+                      <input
+                        type="email"
+                        name="email"
+                        value={userRegistrationData.email}
+                        onChange={handleUserRegistrationChange}
+                        required
+                      />
+                    </div>
+                    <div className="admin-dashboard-form-group">
+                      <label>Password:</label>
+                      <input
+                        type="password"
+                        name="password"
+                        value={userRegistrationData.password}
+                        onChange={handleUserRegistrationChange}
+                        required
+                      />
+                    </div>
+                    <div className="admin-dashboard-form-group">
+                      <label>Confirm Password:</label>
+                      <input
+                        type="password"
+                        name="confirmPassword"
+                        value={userRegistrationData.confirmPassword}
+                        onChange={handleUserRegistrationChange}
+                        required
+                      />
+                    </div>
+                    <div className="admin-dashboard-form-group">
+                      <label>Role:</label>
+                      <select
+                        name="role"
+                        value={userRegistrationData.role}
+                        onChange={handleUserRegistrationChange}
+                        required
+                      >
+                        <option value="user">User</option>
+                        <option value="admin">Admin</option>
+                        <option value="judge">Judge</option>
+                        <option value="mentor">Mentor</option>
+                      </select>
+                    </div>
+                    <button type="submit" className="admin-dashboard-button">
+                      <FaUserPlus /> Register User
+                    </button>
+                  </form>
+                )}
+
+                <div className="admin-dashboard-section-header">
+                  <h2>All Users</h2>
+                </div>
+                <div className="admin-dashboard-table-container">
+                  <table className="admin-dashboard-table">
+                    <thead>
+                      <tr>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {allUsers.map((user) => (
+                        <tr key={user._id}>
+                          <td>{user.username}</td>
+                          <td>{user.email}</td>
+                          <td>
+                            <span className={`admin-dashboard-status admin-dashboard-status-${user.role}`}>
+                              {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                            </span>
+                          </td>
+                          <td>
+                            <span
+                              className={`admin-dashboard-status ${
+                                user.isApproved ? "admin-dashboard-status-approved" : "admin-dashboard-status-pending"
+                              }`}
+                            >
+                              {user.isApproved ? "Approved" : "Pending"}
+                            </span>
+                          </td>
+                          <td className="admin-dashboard-actions">
+                            <button
+                              className="admin-dashboard-reject-btn"
+                              onClick={() => handleDeleteUser(user._id, user.username)}
+                            >
+                              <FaTrashAlt /> Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}

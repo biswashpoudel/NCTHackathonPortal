@@ -21,7 +21,6 @@ import {
   FaCheckCircle,
   FaInfoCircle,
   FaExclamationTriangle,
-  FaMegaphone,
 } from "react-icons/fa"
 import { MdGroupAdd } from "react-icons/md"
 import { HiUserGroup } from "react-icons/hi2"

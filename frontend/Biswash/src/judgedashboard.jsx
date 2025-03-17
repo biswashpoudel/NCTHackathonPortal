@@ -19,6 +19,10 @@ import {
   FaMedal,
   FaGlobe,
   FaPlus,
+  FaBan,
+  FaUsers,
+  FaUserFriends,
+  FaSearch,
 } from "react-icons/fa"
 import "./judgedashboard.css"
 
@@ -31,6 +35,7 @@ const JudgeDashboard = () => {
   const [activeTab, setActiveTab] = useState("judgeSubmissions")
   const [submissions, setSubmissions] = useState([])
   const [leaderboard, setLeaderboard] = useState([])
+  const [groups, setGroups] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [showProfileDropdown, setShowProfileDropdown] = useState(false)
@@ -44,6 +49,7 @@ const JudgeDashboard = () => {
     type: "info",
   })
   const [notificationSuccess, setNotificationSuccess] = useState("")
+  const [searchTerm, setSearchTerm] = useState("")
 
   // Base URL for API endpoints
   const API_BASE_URL = "https://ncthackathonportal.onrender.com"
@@ -69,6 +75,8 @@ const JudgeDashboard = () => {
   useEffect(() => {
     if (activeTab === "leaderboard") {
       fetchLeaderboard()
+    } else if (activeTab === "groups") {
+      fetchGroups()
     }
   }, [activeTab])
 
@@ -82,6 +90,19 @@ const JudgeDashboard = () => {
     } catch (err) {
       console.error("Error fetching submissions", err)
       setError("Failed to load submissions. Please try again.")
+      setLoading(false)
+    }
+  }
+
+  const fetchGroups = async () => {
+    try {
+      setLoading(true)
+      const res = await axios.get(`${API_BASE_URL}/groups`)
+      setGroups(res.data)
+      setLoading(false)
+    } catch (err) {
+      console.error("Error fetching groups", err)
+      setError("Failed to load groups. Please try again.")
       setLoading(false)
     }
   }
@@ -214,6 +235,27 @@ const JudgeDashboard = () => {
     }
   }
 
+  const unpublishLeaderboard = async () => {
+    try {
+      setPublishLoading(true)
+      await axios.post(`${API_BASE_URL}/unpublish-leaderboard`)
+      setLeaderboardPublished(false)
+      setSuccessMessage("Leaderboard unpublished successfully! Results are now hidden from participants.")
+      setError(null)
+
+      // Auto-clear success message after 3 seconds
+      setTimeout(() => {
+        setSuccessMessage("")
+      }, 3000)
+
+      setPublishLoading(false)
+    } catch (err) {
+      console.error("Error unpublishing leaderboard", err)
+      setError("Failed to unpublish leaderboard. Please try again.")
+      setPublishLoading(false)
+    }
+  }
+
   const handleCreateNotification = async (e) => {
     e.preventDefault()
 
@@ -245,9 +287,17 @@ const JudgeDashboard = () => {
     }
   }
 
+  // Filter groups based on search term
+  const filteredGroups = groups.filter(
+    (group) =>
+      group.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      group.members.some((member) => member.toLowerCase().includes(searchTerm.toLowerCase())),
+  )
+
   const menuItems = [
     { id: "judgeSubmissions", label: "View Submissions", icon: <FaLaptopCode /> },
     { id: "leaderboard", label: "Leaderboard", icon: <FaTrophy /> },
+    { id: "groups", label: "Groups", icon: <FaUsers /> },
     { id: "discussion", label: "Discussion", icon: <FaComments /> },
     { id: "notifications", label: "Notifications", icon: <FaBell /> },
   ]
@@ -403,6 +453,33 @@ const JudgeDashboard = () => {
             <div className="dashboard-section">
               <div className="dashboard-section-header">
                 <h2>Leaderboard</h2>
+                <div className="dashboard-header-actions">
+                  {!leaderboardPublished ? (
+                    <button className="dashboard-publish-button" onClick={publishLeaderboard} disabled={publishLoading}>
+                      {publishLoading ? (
+                        "Publishing..."
+                      ) : (
+                        <>
+                          <FaGlobe className="dashboard-button-icon" /> Publish Leaderboard
+                        </>
+                      )}
+                    </button>
+                  ) : (
+                    <button
+                      className="dashboard-publish-button dashboard-unpublish-button"
+                      onClick={unpublishLeaderboard}
+                      disabled={publishLoading}
+                    >
+                      {publishLoading ? (
+                        "Unpublishing..."
+                      ) : (
+                        <>
+                          <FaBan className="dashboard-button-icon" /> Unpublish Leaderboard
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="dashboard-section-body">
                 {!leaderboardPublished ? (
@@ -440,6 +517,69 @@ const JudgeDashboard = () => {
                   </div>
                 ) : (
                   <p className="dashboard-empty-state">No leaderboard data available.</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === "groups" && (
+            <div className="dashboard-section">
+              <div className="dashboard-section-header">
+                <h2>All Groups</h2>
+                <div className="dashboard-search">
+                  <FaSearch className="dashboard-search-icon" />
+                  <input
+                    type="text"
+                    placeholder="Search groups or members..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="dashboard-section-body">
+                {loading ? (
+                  <p className="dashboard-loading">Loading groups...</p>
+                ) : filteredGroups.length > 0 ? (
+                  <div className="dashboard-groups-grid">
+                    {filteredGroups.map((group) => (
+                      <div key={group._id} className="dashboard-group-card">
+                        <div className="dashboard-group-card-header">
+                          <h3>{group.name}</h3>
+                          <span className={`dashboard-group-status ${group.pendingApproval ? "pending" : "approved"}`}>
+                            {group.pendingApproval ? "Pending Approval" : "Approved"}
+                          </span>
+                        </div>
+                        <div className="dashboard-group-card-body">
+                          <p className="dashboard-group-description">{group.description}</p>
+                          <div className="dashboard-group-members">
+                            <h4>
+                              <FaUserFriends /> Members ({group.members.length})
+                            </h4>
+                            <ul className="dashboard-members-list">
+                              {group.members.map((member, index) => (
+                                <li key={index} className="dashboard-member-item">
+                                  <div className="dashboard-member-avatar">{member.charAt(0).toUpperCase()}</div>
+                                  <span>{member}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                          <div className="dashboard-group-meta">
+                            <p>
+                              Created by: <b>{group.createdBy}</b>
+                            </p>
+                            <p>
+                              Created on: <b>{new Date(group.createdAt).toLocaleDateString()}</b>
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="dashboard-empty-state">
+                    {searchTerm ? "No groups match your search." : "No groups have been created yet."}
+                  </p>
                 )}
               </div>
             </div>

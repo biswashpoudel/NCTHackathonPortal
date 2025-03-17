@@ -415,6 +415,35 @@ app.post("/publish-leaderboard", async (req, res) => {
   }
 })
 
+// Add a new endpoint for unpublishing the leaderboard
+// This should be placed near the existing publish-leaderboard endpoint
+
+// Endpoint to unpublish the leaderboard
+app.post("/unpublish-leaderboard", async (req, res) => {
+  try {
+    // Check if the user is a judge
+    if (req.user.role !== "judge" && req.user.role !== "admin") {
+      return res.status(403).json({ message: "Only judges and admins can unpublish the leaderboard" })
+    }
+
+    // Update the leaderboard status to unpublished
+    await LeaderboardStatus.updateOne({}, { $set: { published: false, publishedAt: new Date() } }, { upsert: true })
+
+    // Log the action
+    // await db.collection('logs').insertOne({
+    //   action: 'unpublish_leaderboard',
+    //   user: req.user.username,
+    //   role: req.user.role,
+    //   timestamp: new Date()
+    // });
+
+    res.status(200).json({ message: "Leaderboard unpublished successfully" })
+  } catch (error) {
+    console.error("Error unpublishing leaderboard:", error)
+    res.status(500).json({ message: "Failed to unpublish leaderboard" })
+  }
+})
+
 // Get Leaderboard
 app.get("/leaderboard", async (req, res) => {
   try {
