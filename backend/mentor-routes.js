@@ -1,10 +1,10 @@
 const express = require("express")
 const router = express.Router()
 const mongoose = require("mongoose")
-const User = require("./models/User")
-const Group = require("./models/Group")
-const Notification = require("./models/Notification")
-const Submission = require("./models/Submission")
+const User = require("../models/User")
+const Group = require("../models/Group")
+const Notification = require("../models/Notification")
+const Submission = require("../models/Submission")
 
 // Get groups assigned to a mentor
 router.get("/mentor-assigned-groups", async (req, res) => {
@@ -46,60 +46,72 @@ router.get("/mentor-assigned-groups", async (req, res) => {
 
 // Assign mentor to group
 router.post("/assign-mentor", async (req, res) => {
-  const { groupId, mentorUsername } = req.body
+  const { mentorId, groupIds, mentorUsername, groupId } = req.body
 
-  if (!groupId || !mentorUsername) {
-    return res.status(400).json({ message: "Group ID and mentor username are required" })
+  // Support both formats: either mentorId+groupIds or mentorUsername+groupId
+  if ((!mentorId && !mentorUsername) || (!groupIds && !groupId)) {
+    return res.status(400).json({ message: "Mentor information and group information are required" })
   }
 
   try {
-    // Check if mentor exists
-    const mentor = await User.findOne({ username: mentorUsername, role: "mentor" })
+    // Find the mentor - support both ID and username methods
+    let mentor
+    if (mentorId) {
+      mentor = await User.findById(mentorId)
+    } else if (mentorUsername) {
+      mentor = await User.findOne({ username: mentorUsername, role: "mentor" })
+    }
 
-    if (!mentor) {
+    if (!mentor || mentor.role !== "mentor") {
       return res.status(404).json({ message: "Mentor not found" })
     }
 
-    // Update group with assigned mentor
-    const updatedGroup = await Group.findByIdAndUpdate(groupId, { assignedMentor: mentorUsername }, { new: true })
+    // Handle both single group ID and array of group IDs
+    const groupIdsToUpdate = groupIds || [groupId]
 
-    if (!updatedGroup) {
-      return res.status(404).json({ message: "Group not found" })
+    // Update each group with the assigned mentor
+    for (const gId of groupIdsToUpdate) {
+      await Group.findByIdAndUpdate(gId, { assignedMentor: mentor.username })
     }
 
-    // Create notification for the group members
-    const notification = new Notification({
-      message: `${mentorUsername} has been assigned as your mentor`,
-      type: "info",
-      sender: "admin",
-      senderRole: "admin",
-      isGlobal: false,
-      recipients: updatedGroup.members,
-      readBy: [],
-    })
+    // Get the updated groups
+    const groups = await Group.find({ _id: { $in: groupIdsToUpdate } })
 
-    await notification.save()
+    // Create notifications for the mentor and group members
+    for (const group of groups) {
+      // Notification for mentor
+      const notification = new Notification({
+        message: `You have been assigned as a mentor to the group "${group.name}"`,
+        type: "info",
+        sender: "admin",
+        senderRole: "admin",
+        isGlobal: false,
+        recipients: [mentor.username],
+        readBy: [],
+      })
+      await notification.save()
 
-    // Create notification for the mentor
-    const mentorNotification = new Notification({
-      message: `You have been assigned as a mentor to the group "${updatedGroup.name}"`,
-      type: "info",
-      sender: "admin",
-      senderRole: "admin",
-      isGlobal: false,
-      recipients: [mentorUsername],
-      readBy: [],
-    })
-
-    await mentorNotification.save()
+      // Notification for group members
+      const memberNotification = new Notification({
+        message: `${mentor.username} has been assigned as your mentor`,
+        type: "info",
+        sender: "admin",
+        senderRole: "admin",
+        isGlobal: false,
+        recipients: group.members,
+        readBy: [],
+      })
+      await memberNotification.save()
+    }
 
     res.status(200).json({
-      message: "Mentor assigned successfully",
-      group: updatedGroup,
+      message: "Mentor assigned to groups successfully",
+      mentor: mentor.username,
+      groups: groups.map((group) => group.name),
     })
-  } catch (err) {
-    console.error("Error assigning mentor:", err)
-    res.status(500).json({ message: "Error assigning mentor", error: err.message })
+  } catch (error) {
+    console.error("Error assigning mentor to groups:", error)
+    res.status(500).json({ message: "Error assigning mentor to groups", error: error.message })
   }
 })
 
