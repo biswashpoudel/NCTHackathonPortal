@@ -10,5 +10,5 @@ const userSchema = new mongoose.Schema({
   isApproved: { type: Boolean, default: false }, // User approval status
 })
 
-module.exports = mongoose.model("User", userSchema)
+module.exports = mongoose.models.User || mongoose.model('User', userSchema);
 
