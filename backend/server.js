@@ -9,7 +9,13 @@ const path = require("path")
 const fs = require("fs")
 require("dotenv").config()
 
-// Add this near the top of your server.js file with other imports
+// Import models instead of redefining them
+const User = require("./models/User")
+const Group = require("./models/Group")
+const Submission = require("./models/Submission")
+const Notification = require("./models/Notification")
+
+// Import routes
 const mentorRoutes = require("./mentor-routes")
 
 const app = express()
@@ -29,52 +35,7 @@ mongoose
   .then(() => console.log("Connected to MongoDB Atlas"))
   .catch((err) => console.error("Error connecting to MongoDB:", err))
 
-// User Schema
-const userSchema = new mongoose.Schema({
-  username: { type: String, required: true, unique: true },
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-  role: { type: String, required: true, enum: ["user", "judge", "mentor", "admin"], default: "user" },
-  isParticipating: { type: String, default: "false" }, // can be 'false', 'pending', or 'true'
-  isApproved: { type: Boolean, default: false }, // User approval status
-})
-const User = mongoose.model("User", userSchema)
-
-// Group Schema
-const groupSchema = new mongoose.Schema({
-  name: { type: String, required: true, unique: true },
-  description: { type: String, required: true },
-  members: [{ type: String }], // Array of usernames
-  createdBy: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now },
-  pendingApproval: { type: Boolean, default: true }, // New field to track if group is awaiting admin approval
-  assignedMentor: { type: String, default: null },
-})
-
-const Group = mongoose.model("Group", groupSchema)
-
-// Submission Schema
-const submissionSchema = new mongoose.Schema({
-  filename: { type: String, required: true },
-  uploadedBy: { type: String, required: true },
-  groupName: { type: String, required: true },
-  date: { type: Date, default: Date.now },
-  feedback: { type: String, default: "" },
-  grade: { type: Number, default: null },
-})
-const Submission = mongoose.model("Submission", submissionSchema)
-
-// Hackathon Schema
-const hackathonSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  description: { type: String, required: true },
-  startDate: { type: Date, required: true },
-  endDate: { type: Date, required: true },
-  status: { type: String, enum: ["upcoming", "active", "completed"], default: "upcoming" },
-  createdBy: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now },
-})
-const Hackathon = mongoose.model("Hackathon", hackathonSchema)
+// IMPORTANT: Remove the schema definitions from here since they're now in separate model files
 
 // Multer for File Uploads
 const storage = multer.diskStorage({
@@ -613,11 +574,29 @@ app.get("/download/:filename", (req, res) => {
   }
 })
 
+// Hackathon Schema
+const hackathonSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  description: { type: String, required: true },
+  startDate: { type: Date, required: true },
+  endDate: { type: Date, required: true },
+  status: { type: String, enum: ["upcoming", "active", "completed"], default: "upcoming" },
+  createdBy: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+})
+const Hackathon = mongoose.model("Hackathon", hackathonSchema)
+
+// Leaderboard Status Schema
+const leaderboardStatusSchema = new mongoose.Schema({
+  published: { type: Boolean, default: false },
+  publishedAt: { type: Date, default: Date.now },
+})
+const LeaderboardStatus = mongoose.model("LeaderboardStatus", leaderboardStatusSchema)
+
 // Get Leaderboard Status
 app.get("/leaderboard-status", async (req, res) => {
   try {
     // Check if there's a leaderboard status document in the database
-    // You might want to create a new model for this
     const status = await LeaderboardStatus.findOne()
 
     if (!status) {
@@ -653,9 +632,6 @@ app.post("/publish-leaderboard", async (req, res) => {
   }
 })
 
-// Add a new endpoint for unpublishing the leaderboard
-// This should be placed near the existing publish-leaderboard endpoint
-
 // Endpoint to unpublish the leaderboard
 app.post("/unpublish-leaderboard", async (req, res) => {
   try {
@@ -666,14 +642,6 @@ app.post("/unpublish-leaderboard", async (req, res) => {
 
     // Update the leaderboard status to unpublished
     await LeaderboardStatus.updateOne({}, { $set: { published: false, publishedAt: new Date() } }, { upsert: true })
-
-    // Log the action
-    // await db.collection('logs').insertOne({
-    //   action: 'unpublish_leaderboard',
-    //   user: req.user.username,
-    //   role: req.user.role,
-    //   timestamp: new Date()
-    // });
 
     res.status(200).json({ message: "Leaderboard unpublished successfully" })
   } catch (error) {
@@ -731,28 +699,6 @@ app.get("/leaderboard", async (req, res) => {
     res.status(500).json({ message: "Error fetching leaderboard", error })
   }
 })
-
-// Leaderboard Status Schema
-const leaderboardStatusSchema = new mongoose.Schema({
-  published: { type: Boolean, default: false },
-  publishedAt: { type: Date, default: Date.now },
-})
-
-const LeaderboardStatus = mongoose.model("LeaderboardStatus", leaderboardStatusSchema)
-
-// Notification Schema
-const notificationSchema = new mongoose.Schema({
-  message: { type: String, required: true },
-  type: { type: String, enum: ["info", "warning", "announcement", "success"], default: "info" },
-  sender: { type: String, required: true },
-  senderRole: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now },
-  isGlobal: { type: Boolean, default: true },
-  recipients: [{ type: String }], // Array of usernames if not global
-  readBy: [{ type: String }], // Array of usernames who have read the notification
-})
-
-const Notification = mongoose.model("Notification", notificationSchema)
 
 // Create Notification
 app.post("/create-notification", async (req, res) => {
@@ -895,7 +841,6 @@ const groupChangeSchema = new mongoose.Schema({
   status: { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
   createdAt: { type: Date, default: Date.now },
 })
-
 const GroupChange = mongoose.model("GroupChange", groupChangeSchema)
 
 // Request Group Member Change
