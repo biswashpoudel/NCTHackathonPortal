@@ -11,5 +11,5 @@ const groupSchema = new mongoose.Schema({
   assignedMentor: { type: String, default: null },
 })
 
-module.exports = mongoose.model("Group", groupSchema)
+module.exports = mongoose.models.Group || mongoose.model('Group', groupSchema);
 
