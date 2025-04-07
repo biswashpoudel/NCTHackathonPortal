@@ -9,10 +9,16 @@ const path = require("path")
 const fs = require("fs")
 require("dotenv").config()
 
+// Add this near the top of your server.js file with other imports
+const mentorRoutes = require("./mentor-routes")
+
 const app = express()
 app.use(cors())
 app.use(bodyParser.json())
 app.use("/uploads", express.static("uploads")) // Serve static files from uploads folder
+
+// Add this with your other app.use statements
+app.use(mentorRoutes)
 
 // MongoDB Connection
 mongoose
@@ -42,6 +48,7 @@ const groupSchema = new mongoose.Schema({
   createdBy: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
   pendingApproval: { type: Boolean, default: true }, // New field to track if group is awaiting admin approval
+  assignedMentor: { type: String, default: null },
 })
 
 const Group = mongoose.model("Group", groupSchema)
@@ -56,6 +63,18 @@ const submissionSchema = new mongoose.Schema({
   grade: { type: Number, default: null },
 })
 const Submission = mongoose.model("Submission", submissionSchema)
+
+// Hackathon Schema
+const hackathonSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  description: { type: String, required: true },
+  startDate: { type: Date, required: true },
+  endDate: { type: Date, required: true },
+  status: { type: String, enum: ["upcoming", "active", "completed"], default: "upcoming" },
+  createdBy: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now },
+})
+const Hackathon = mongoose.model("Hackathon", hackathonSchema)
 
 // Multer for File Uploads
 const storage = multer.diskStorage({
@@ -101,6 +120,225 @@ app.post("/login", async (req, res) => {
     res.status(200).json({ message: "Login successful", token, username: user.username, role: user.role })
   } catch (error) {
     res.status(500).json({ message: "Error logging in", error })
+  }
+})
+
+// Get All Users
+app.get("/all-users", async (req, res) => {
+  try {
+    const users = await User.find({}, { password: 0 }) // Exclude password field
+    res.status(200).json(users)
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching users", error })
+  }
+})
+
+// Delete User
+app.delete("/users/:userId", async (req, res) => {
+  const { userId } = req.params
+
+  try {
+    const user = await User.findByIdAndDelete(userId)
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" })
+    }
+
+    res.status(200).json({ message: "User deleted successfully" })
+  } catch (error) {
+    res.status(500).json({ message: "Error deleting user", error })
+  }
+})
+
+// Get Mentors
+app.get("/mentors", async (req, res) => {
+  try {
+    const mentors = await User.find({ role: "mentor" }, { password: 0 }) // Exclude password field
+
+    // For each mentor, find their assigned groups
+    const mentorsWithGroups = await Promise.all(
+      mentors.map(async (mentor) => {
+        const assignedGroups = await Group.find({ assignedMentor: mentor.username })
+        return {
+          ...mentor.toObject(),
+          assignedGroups: assignedGroups.map((group) => ({
+            _id: group._id,
+            name: group.name,
+          })),
+        }
+      }),
+    )
+
+    res.status(200).json(mentorsWithGroups)
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching mentors", error })
+  }
+})
+
+// Assign Mentor to Groups
+app.post("/assign-mentor", async (req, res) => {
+  const { mentorId, groupIds } = req.body
+
+  if (!mentorId || !groupIds || !groupIds.length) {
+    return res.status(400).json({ message: "Mentor ID and at least one group ID are required" })
+  }
+
+  try {
+    // Find the mentor
+    const mentor = await User.findById(mentorId)
+
+    if (!mentor || mentor.role !== "mentor") {
+      return res.status(404).json({ message: "Mentor not found" })
+    }
+
+    // Update each group with the assigned mentor
+    for (const groupId of groupIds) {
+      await Group.findByIdAndUpdate(groupId, { assignedMentor: mentor.username })
+    }
+
+    // Create notifications for the mentor
+    const groups = await Group.find({ _id: { $in: groupIds } })
+
+    for (const group of groups) {
+      const notification = new Notification({
+        message: `You have been assigned as a mentor to the group "${group.name}"`,
+        type: "info",
+        sender: "admin",
+        senderRole: "admin",
+        isGlobal: false,
+        recipients: [mentor.username],
+        readBy: [],
+      })
+
+      await notification.save()
+
+      // Create notifications for group members
+      const memberNotification = new Notification({
+        message: `${mentor.username} has been assigned as your mentor`,
+        type: "info",
+        sender: "admin",
+        senderRole: "admin",
+        isGlobal: false,
+        recipients: group.members,
+        readBy: [],
+      })
+
+      await memberNotification.save()
+    }
+
+    res.status(200).json({
+      message: "Mentor assigned to groups successfully",
+      mentor: mentor.username,
+      groups: groups.map((group) => group.name),
+    })
+  } catch (error) {
+    console.error("Error assigning mentor to groups:", error)
+    res.status(500).json({ message: "Error assigning mentor to groups", error: error.message })
+  }
+})
+
+// Hackathon Routes
+// Get all hackathons
+app.get("/hackathons", async (req, res) => {
+  try {
+    const hackathons = await Hackathon.find().sort({ createdAt: -1 })
+    res.status(200).json(hackathons)
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching hackathons", error })
+  }
+})
+
+// Create a new hackathon
+app.post("/hackathons", async (req, res) => {
+  const { title, description, startDate, endDate, status, createdBy } = req.body
+
+  try {
+    const newHackathon = new Hackathon({
+      title,
+      description,
+      startDate,
+      endDate,
+      status: status || "upcoming",
+      createdBy,
+    })
+
+    await newHackathon.save()
+
+    // Create a notification for all users
+    const notification = new Notification({
+      message: `New hackathon announced: ${title}`,
+      type: "announcement",
+      sender: createdBy,
+      senderRole: "admin",
+      isGlobal: true,
+      readBy: [],
+    })
+
+    await notification.save()
+
+    res.status(201).json({
+      message: "Hackathon created successfully",
+      hackathon: newHackathon,
+    })
+  } catch (error) {
+    res.status(500).json({ message: "Error creating hackathon", error })
+  }
+})
+
+// Update a hackathon
+app.put("/hackathons/:hackathonId", async (req, res) => {
+  const { hackathonId } = req.params
+  const { title, description, startDate, endDate, status } = req.body
+
+  try {
+    const hackathon = await Hackathon.findByIdAndUpdate(
+      hackathonId,
+      { title, description, startDate, endDate, status },
+      { new: true },
+    )
+
+    if (!hackathon) {
+      return res.status(404).json({ message: "Hackathon not found" })
+    }
+
+    // Create a notification for all users
+    const notification = new Notification({
+      message: `Hackathon "${title}" has been updated`,
+      type: "info",
+      sender: "admin",
+      senderRole: "admin",
+      isGlobal: true,
+      readBy: [],
+    })
+
+    await notification.save()
+
+    res.status(200).json({
+      message: "Hackathon updated successfully",
+      hackathon,
+    })
+  } catch (error) {
+    res.status(500).json({ message: "Error updating hackathon", error })
+  }
+})
+
+// Delete a hackathon
+app.delete("/hackathons/:hackathonId", async (req, res) => {
+  const { hackathonId } = req.params
+
+  try {
+    const hackathon = await Hackathon.findByIdAndDelete(hackathonId)
+
+    if (!hackathon) {
+      return res.status(404).json({ message: "Hackathon not found" })
+    }
+
+    res.status(200).json({
+      message: "Hackathon deleted successfully",
+      hackathon,
+    })
+  } catch (error) {
+    res.status(500).json({ message: "Error deleting hackathon", error })
   }
 })
 
@@ -422,7 +660,7 @@ app.post("/publish-leaderboard", async (req, res) => {
 app.post("/unpublish-leaderboard", async (req, res) => {
   try {
     // Check if the user is a judge
-    if (req.user.role !== "judge" && req.user.role !== "admin") {
+    if (req.user && req.user.role !== "judge" && req.user.role !== "admin") {
       return res.status(403).json({ message: "Only judges and admins can unpublish the leaderboard" })
     }
 
@@ -610,7 +848,7 @@ app.post("/mark-all-notifications-read", async (req, res) => {
     // Find all notifications for this user
     const notifications = await Notification.find({
       $or: [{ isGlobal: true }, { recipients: username }],
-      readBy: { $ne: username }, // Only get notifications not already read by this user
+      readBy: { $ne: username },
     })
 
     // Add username to readBy array for each notification
@@ -653,7 +891,7 @@ const groupChangeSchema = new mongoose.Schema({
   groupName: { type: String, required: true },
   requestedBy: { type: String, required: true },
   changeType: { type: String, enum: ["add", "remove"], required: true },
-  members: [{ type: String }], // Array of usernames to add or remove
+  members: [{ type: String }],
   status: { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
   createdAt: { type: Date, default: Date.now },
 })

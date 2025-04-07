@@ -17,8 +17,15 @@ import {
   FaPlus,
   FaUserPlus,
   FaTrashAlt,
+  FaChevronLeft,
+  FaChevronRight,
+  FaUserTie,
+  FaCalendarAlt,
+  FaEdit,
+  FaInfoCircle,
 } from "react-icons/fa"
-import "./admindashboard.css" // You'll need to create this CSS file
+import { RiUserShared2Fill } from "react-icons/ri"
+import "./admindashboard.css"
 
 const AdminDashboard = () => {
   const location = useLocation()
@@ -44,7 +51,6 @@ const AdminDashboard = () => {
   const [notificationSuccess, setNotificationSuccess] = useState("")
   const [groupChangeRequests, setGroupChangeRequests] = useState([])
   const [groupChangeLoading, setGroupChangeLoading] = useState(false)
-  // Add these state variables after the existing state declarations
   const [showUserRegistrationForm, setShowUserRegistrationForm] = useState(false)
   const [allUsers, setAllUsers] = useState([])
   const [userRegistrationData, setUserRegistrationData] = useState({
@@ -57,6 +63,22 @@ const AdminDashboard = () => {
   const [userRegistrationError, setUserRegistrationError] = useState("")
   const [userRegistrationSuccess, setUserRegistrationSuccess] = useState("")
   const [usernameError, setUsernameError] = useState("")
+  const [mentors, setMentors] = useState([])
+  const [showMentorAssignmentForm, setShowMentorAssignmentForm] = useState(false)
+  const [mentorAssignment, setMentorAssignment] = useState({
+    mentorId: "",
+    groupIds: [],
+  })
+  const [hackathons, setHackathons] = useState([])
+  const [showHackathonForm, setShowHackathonForm] = useState(false)
+  const [hackathonFormData, setHackathonFormData] = useState({
+    title: "",
+    description: "",
+    startDate: "",
+    endDate: "",
+    status: "upcoming",
+  })
+  const [selectedHackathon, setSelectedHackathon] = useState(null)
 
   useEffect(() => {
     if (!username) {
@@ -70,7 +92,10 @@ const AdminDashboard = () => {
     fetchApprovedGroups()
     fetchSubmissions()
     fetchLeaderboard()
-    fetchGroupChangeRequests() // Add this line
+    fetchGroupChangeRequests()
+    fetchAllUsers()
+    fetchMentors()
+    fetchHackathons()
   }, [username, navigate])
 
   const fetchPendingUsers = async () => {
@@ -129,6 +154,94 @@ const AdminDashboard = () => {
       setLeaderboardPublished(false)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchAllUsers = async () => {
+    try {
+      const res = await axios.get("https://ncthackathonportal.onrender.com/all-users")
+      setAllUsers(res.data)
+    } catch (err) {
+      console.error("Error fetching all users", err)
+      // For demo purposes, create some mock users
+      const mockUsers = [
+        {
+          _id: "user1",
+          username: "john_doe",
+          email: "john@example.com",
+          role: "user",
+          isApproved: true,
+        },
+        {
+          _id: "user2",
+          username: "jane_smith",
+          email: "jane@example.com",
+          role: "user",
+          isApproved: true,
+        },
+        {
+          _id: "mentor1",
+          username: "mentor_alex",
+          email: "alex@example.com",
+          role: "mentor",
+          isApproved: true,
+        },
+        {
+          _id: "judge1",
+          username: "judge_sarah",
+          email: "sarah@example.com",
+          role: "judge",
+          isApproved: true,
+        },
+      ]
+      setAllUsers(mockUsers)
+    }
+  }
+
+  const fetchMentors = async () => {
+    try {
+      const res = await axios.get("https://ncthackathonportal.onrender.com/mentors")
+      setMentors(res.data)
+    } catch (err) {
+      console.error("Error fetching mentors", err)
+      // For demo purposes, create some mock mentors
+      const mockMentors = [
+        {
+          _id: "mentor1",
+          username: "mentor_alex",
+          email: "alex@example.com",
+          assignedGroups: [],
+        },
+        {
+          _id: "mentor2",
+          username: "mentor_lisa",
+          email: "lisa@example.com",
+          assignedGroups: ["group1"],
+        },
+      ]
+      setMentors(mockMentors)
+    }
+  }
+
+  const fetchHackathons = async () => {
+    try {
+      const res = await axios.get("https://ncthackathonportal.onrender.com/hackathons")
+      setHackathons(res.data)
+    } catch (err) {
+      console.error("Error fetching hackathons", err)
+      // For demo purposes, create a mock hackathon
+      const mockHackathons = [
+        {
+          _id: "hack1",
+          title: "Summer Code Challenge 2023",
+          description: "Build innovative solutions using modern web technologies",
+          startDate: "2023-06-15",
+          endDate: "2023-06-30",
+          status: "active",
+          createdBy: "admin",
+        },
+      ]
+      setHackathons(mockHackathons)
     }
   }
 
@@ -246,18 +359,6 @@ const AdminDashboard = () => {
     }
   }
 
-  const menuItems = [
-    { id: "pending-users", label: "Pending Users", icon: <FaUsers /> },
-    { id: "pending-groups", label: "Pending Groups", icon: <FaUsersCog /> },
-    { id: "group-changes", label: "Group Changes", icon: <FaUsersCog /> }, // Add this line
-    { id: "approved-users", label: "Approved Users", icon: <FaUserCheck /> },
-    { id: "approved-groups", label: "Approved Groups", icon: <FaUsersCog /> },
-    { id: "submissions", label: "Submissions", icon: <FaFileAlt /> },
-    { id: "leaderboard", label: "Leaderboard", icon: <FaMedal /> },
-    { id: "notifications", label: "Notifications", icon: <FaBell /> },
-    { id: "user-management", label: "User Management", icon: <FaUserPlus /> }, // Add this line
-  ]
-
   const fetchGroupChangeRequests = async () => {
     try {
       const res = await axios.get("https://ncthackathonportal.onrender.com/pending-group-changes")
@@ -301,17 +402,6 @@ const AdminDashboard = () => {
       alert(`Failed to reject group change: ${err.response?.data?.message || "Unknown error"}`)
     } finally {
       setGroupChangeLoading(false)
-    }
-  }
-
-  // Add these functions after the existing functions but before the return statement
-
-  const fetchAllUsers = async () => {
-    try {
-      const res = await axios.get("https://ncthackathonportal.onrender.com/all-users")
-      setAllUsers(res.data)
-    } catch (err) {
-      console.error("Error fetching all users", err)
     }
   }
 
@@ -359,6 +449,7 @@ const AdminDashboard = () => {
         role: "user",
       })
       fetchAllUsers()
+      fetchMentors()
 
       // Clear success message after 3 seconds
       setTimeout(() => {
@@ -378,6 +469,7 @@ const AdminDashboard = () => {
       await axios.delete(`https://ncthackathonportal.onrender.com/users/${userId}`)
       setUserRegistrationSuccess("User deleted successfully!")
       fetchAllUsers()
+      fetchMentors()
 
       // Clear success message after 3 seconds
       setTimeout(() => {
@@ -388,12 +480,140 @@ const AdminDashboard = () => {
     }
   }
 
-  // Add this to the useEffect that runs when the component mounts
-  useEffect(() => {
-    if (activeTab === "user-management") {
-      fetchAllUsers()
+  const handleMentorAssignmentChange = (e) => {
+    const { name, value } = e.target
+
+    if (name === "mentorId") {
+      setMentorAssignment({ ...mentorAssignment, mentorId: value })
     }
-  }, [activeTab])
+  }
+
+  const handleGroupSelectionChange = (groupId) => {
+    const currentGroupIds = [...mentorAssignment.groupIds]
+
+    if (currentGroupIds.includes(groupId)) {
+      // Remove group if already selected
+      setMentorAssignment({
+        ...mentorAssignment,
+        groupIds: currentGroupIds.filter((id) => id !== groupId),
+      })
+    } else {
+      // Add group if not selected
+      setMentorAssignment({
+        ...mentorAssignment,
+        groupIds: [...currentGroupIds, groupId],
+      })
+    }
+  }
+
+  const handleMentorAssignmentSubmit = async (e) => {
+    e.preventDefault()
+
+    if (!mentorAssignment.mentorId || mentorAssignment.groupIds.length === 0) {
+      alert("Please select a mentor and at least one group")
+      return
+    }
+
+    try {
+      await axios.post("https://ncthackathonportal.onrender.com/assign-mentor", {
+        mentorId: mentorAssignment.mentorId,
+        groupIds: mentorAssignment.groupIds,
+      })
+
+      alert("Mentor assigned to groups successfully!")
+      setMentorAssignment({ mentorId: "", groupIds: [] })
+      setShowMentorAssignmentForm(false)
+      fetchMentors()
+      fetchApprovedGroups()
+    } catch (err) {
+      console.error("Error assigning mentor to groups", err)
+      alert(`Failed to assign mentor: ${err.response?.data?.message || "Unknown error"}`)
+    }
+  }
+
+  const handleHackathonFormChange = (e) => {
+    const { name, value } = e.target
+    setHackathonFormData({ ...hackathonFormData, [name]: value })
+  }
+
+  const handleHackathonSubmit = async (e) => {
+    e.preventDefault()
+
+    try {
+      if (selectedHackathon) {
+        // Update existing hackathon
+        await axios.put(
+          `https://ncthackathonportal.onrender.com/hackathons/${selectedHackathon._id}`,
+          hackathonFormData,
+        )
+        alert("Hackathon updated successfully!")
+      } else {
+        // Create new hackathon
+        await axios.post("https://ncthackathonportal.onrender.com/hackathons", {
+          ...hackathonFormData,
+          createdBy: username,
+        })
+        alert("Hackathon created successfully!")
+      }
+
+      setHackathonFormData({
+        title: "",
+        description: "",
+        startDate: "",
+        endDate: "",
+        status: "upcoming",
+      })
+      setSelectedHackathon(null)
+      setShowHackathonForm(false)
+      fetchHackathons()
+    } catch (err) {
+      console.error("Error with hackathon", err)
+      alert(
+        `Failed to ${selectedHackathon ? "update" : "create"} hackathon: ${err.response?.data?.message || "Unknown error"}`,
+      )
+    }
+  }
+
+  const handleEditHackathon = (hackathon) => {
+    setSelectedHackathon(hackathon)
+    setHackathonFormData({
+      title: hackathon.title,
+      description: hackathon.description,
+      startDate: hackathon.startDate.substring(0, 10), // Format date for input
+      endDate: hackathon.endDate.substring(0, 10), // Format date for input
+      status: hackathon.status,
+    })
+    setShowHackathonForm(true)
+  }
+
+  const handleDeleteHackathon = async (hackathonId) => {
+    if (!confirm("Are you sure you want to delete this hackathon?")) {
+      return
+    }
+
+    try {
+      await axios.delete(`https://ncthackathonportal.onrender.com/hackathons/${hackathonId}`)
+      alert("Hackathon deleted successfully!")
+      fetchHackathons()
+    } catch (err) {
+      console.error("Error deleting hackathon", err)
+      alert(`Failed to delete hackathon: ${err.response?.data?.message || "Unknown error"}`)
+    }
+  }
+
+  const menuItems = [
+    { id: "pending-users", label: "Pending Users", icon: <RiUserShared2Fill /> },
+    { id: "pending-groups", label: "Pending Groups", icon: <FaUsersCog /> },
+    { id: "group-changes", label: "Group Changes", icon: <FaUsersCog /> },
+    { id: "approved-users", label: "Approved Users", icon: <FaUserCheck /> },
+    { id: "approved-groups", label: "Approved Groups", icon: <FaUsers /> },
+    { id: "submissions", label: "Submissions", icon: <FaFileAlt /> },
+    { id: "leaderboard", label: "Leaderboard", icon: <FaMedal /> },
+    { id: "notifications", label: "Notifications", icon: <FaBell /> },
+    { id: "user-management", label: "User Management", icon: <FaUserPlus /> },
+    { id: "mentor-management", label: "Mentor Management", icon: <FaUserTie /> },
+    { id: "hackathons", label: "Hackathons", icon: <FaCalendarAlt /> },
+  ]
 
   return (
     <div className="admin-dashboard-wrapper">
@@ -406,7 +626,7 @@ const AdminDashboard = () => {
         </div>
 
         <div className="admin-dashboard-navbar-right">
-          <span className="admin-dashboard-username">{username}</span>
+          <span className="admin-dashboard-username">Hi, {username}</span>
           <button className="admin-dashboard-logout" onClick={handleLogout}>
             <FaSignOutAlt /> Logout
           </button>
@@ -415,6 +635,9 @@ const AdminDashboard = () => {
 
       <div className="admin-dashboard-main">
         <div className={`admin-dashboard-sidebar ${sidebarOpen ? "open" : "closed"}`}>
+          <button className="admin-dashboard-sidebar-toggle" onClick={toggleSidebar}>
+            {sidebarOpen ? <FaChevronLeft /> : <FaChevronRight />}
+          </button>
           <ul className="admin-dashboard-sidebar-menu">
             {menuItems.map((item) => (
               <li key={item.id} className={activeTab === item.id ? "active" : ""} onClick={() => setActiveTab(item.id)}>
@@ -602,6 +825,7 @@ const AdminDashboard = () => {
                           <th>Group Name</th>
                           <th>Created By</th>
                           <th>Members</th>
+                          <th>Assigned Mentor</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -610,6 +834,7 @@ const AdminDashboard = () => {
                             <td>{group.name}</td>
                             <td>{group.createdBy}</td>
                             <td>{group.members.join(", ")}</td>
+                            <td>{group.assignedMentor || "None"}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -941,6 +1166,255 @@ const AdminDashboard = () => {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "mentor-management" && (
+            <div className="admin-dashboard-section">
+              <div className="admin-dashboard-section-header">
+                <h2>Mentor Management</h2>
+                <button
+                  className="admin-dashboard-button"
+                  onClick={() => setShowMentorAssignmentForm(!showMentorAssignmentForm)}
+                >
+                  {showMentorAssignmentForm ? "Hide Form" : "Assign Mentors to Groups"}
+                </button>
+              </div>
+              <div className="admin-dashboard-section-body">
+                {showMentorAssignmentForm && (
+                  <form onSubmit={handleMentorAssignmentSubmit} className="admin-dashboard-form">
+                    <div className="admin-dashboard-form-group">
+                      <label>Select Mentor:</label>
+                      <select
+                        name="mentorId"
+                        value={mentorAssignment.mentorId}
+                        onChange={handleMentorAssignmentChange}
+                        required
+                      >
+                        <option value="">-- Select a Mentor --</option>
+                        {allUsers
+                          .filter((user) => user.role === "mentor")
+                          .map((mentor) => (
+                            <option key={mentor._id} value={mentor._id}>
+                              {mentor.username} ({mentor.email})
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                    <div className="admin-dashboard-form-group">
+                      <label>Select Groups to Assign:</label>
+                      <div className="admin-dashboard-checkbox-group">
+                        {approvedGroups.map((group) => (
+                          <div key={group._id} className="admin-dashboard-checkbox-item">
+                            <input
+                              type="checkbox"
+                              id={`group-${group._id}`}
+                              checked={mentorAssignment.groupIds.includes(group._id)}
+                              onChange={() => handleGroupSelectionChange(group._id)}
+                            />
+                            <label htmlFor={`group-${group._id}`}>
+                              {group.name} ({group.members.length} members)
+                              {group.assignedMentor && (
+                                <span className="admin-dashboard-assigned-mentor">
+                                  Currently assigned to: {group.assignedMentor}
+                                </span>
+                              )}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <button type="submit" className="admin-dashboard-button">
+                      <FaUserTie /> Assign Mentor to Groups
+                    </button>
+                  </form>
+                )}
+
+                <div className="admin-dashboard-section-header">
+                  <h2>Current Mentor Assignments</h2>
+                </div>
+                <div className="admin-dashboard-table-container">
+                  <table className="admin-dashboard-table">
+                    <thead>
+                      <tr>
+                        <th>Mentor</th>
+                        <th>Email</th>
+                        <th>Assigned Groups</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {allUsers
+                        .filter((user) => user.role === "mentor")
+                        .map((mentor) => {
+                          const assignedGroups = approvedGroups.filter(
+                            (group) => group.assignedMentor === mentor.username,
+                          )
+                          return (
+                            <tr key={mentor._id}>
+                              <td>{mentor.username}</td>
+                              <td>{mentor.email}</td>
+                              <td>
+                                {assignedGroups.length > 0
+                                  ? assignedGroups.map((g) => g.name).join(", ")
+                                  : "No groups assigned"}
+                              </td>
+                              <td className="admin-dashboard-actions">
+                                <button
+                                  className="admin-dashboard-button"
+                                  onClick={() => {
+                                    setMentorAssignment({
+                                      mentorId: mentor._id,
+                                      groupIds: assignedGroups.map((g) => g._id),
+                                    })
+                                    setShowMentorAssignmentForm(true)
+                                  }}
+                                >
+                                  <FaEdit /> Edit Assignments
+                                </button>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "hackathons" && (
+            <div className="admin-dashboard-section">
+              <div className="admin-dashboard-section-header">
+                <h2>Hackathons</h2>
+                <button
+                  className="admin-dashboard-button"
+                  onClick={() => {
+                    setSelectedHackathon(null)
+                    setHackathonFormData({
+                      title: "",
+                      description: "",
+                      startDate: "",
+                      endDate: "",
+                      status: "upcoming",
+                    })
+                    setShowHackathonForm(!showHackathonForm)
+                  }}
+                >
+                  {showHackathonForm && !selectedHackathon ? "Hide Form" : "Create New Hackathon"}
+                </button>
+              </div>
+              <div className="admin-dashboard-section-body">
+                {showHackathonForm && (
+                  <form onSubmit={handleHackathonSubmit} className="admin-dashboard-form">
+                    <div className="admin-dashboard-form-group">
+                      <label>Hackathon Title:</label>
+                      <input
+                        type="text"
+                        name="title"
+                        value={hackathonFormData.title}
+                        onChange={handleHackathonFormChange}
+                        required
+                      />
+                    </div>
+                    <div className="admin-dashboard-form-group">
+                      <label>Description:</label>
+                      <textarea
+                        name="description"
+                        value={hackathonFormData.description}
+                        onChange={handleHackathonFormChange}
+                        rows={4}
+                        required
+                      />
+                    </div>
+                    <div className="admin-dashboard-form-group">
+                      <label>Start Date:</label>
+                      <input
+                        type="date"
+                        name="startDate"
+                        value={hackathonFormData.startDate}
+                        onChange={handleHackathonFormChange}
+                        required
+                      />
+                    </div>
+                    <div className="admin-dashboard-form-group">
+                      <label>End Date:</label>
+                      <input
+                        type="date"
+                        name="endDate"
+                        value={hackathonFormData.endDate}
+                        onChange={handleHackathonFormChange}
+                        required
+                      />
+                    </div>
+                    <div className="admin-dashboard-form-group">
+                      <label>Status:</label>
+                      <select
+                        name="status"
+                        value={hackathonFormData.status}
+                        onChange={handleHackathonFormChange}
+                        required
+                      >
+                        <option value="upcoming">Upcoming</option>
+                        <option value="active">Active</option>
+                        <option value="completed">Completed</option>
+                      </select>
+                    </div>
+                    <button type="submit" className="admin-dashboard-button">
+                      <FaCalendarAlt /> {selectedHackathon ? "Update Hackathon" : "Create Hackathon"}
+                    </button>
+                  </form>
+                )}
+
+                <div className="admin-dashboard-hackathons-grid">
+                  {hackathons.length > 0 ? (
+                    hackathons.map((hackathon) => (
+                      <div key={hackathon._id} className="admin-dashboard-hackathon-card">
+                        <div className="admin-dashboard-hackathon-header">
+                          <h3>{hackathon.title}</h3>
+                          <span className={`admin-dashboard-status admin-dashboard-status-${hackathon.status}`}>
+                            {hackathon.status.charAt(0).toUpperCase() + hackathon.status.slice(1)}
+                          </span>
+                        </div>
+                        <div className="admin-dashboard-hackathon-body">
+                          <p>{hackathon.description}</p>
+                          <div className="admin-dashboard-hackathon-dates">
+                            <div>
+                              <strong>Start Date:</strong> {new Date(hackathon.startDate).toLocaleDateString()}
+                            </div>
+                            <div>
+                              <strong>End Date:</strong> {new Date(hackathon.endDate).toLocaleDateString()}
+                            </div>
+                            <div>
+                              <strong>Created By:</strong> {hackathon.createdBy}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="admin-dashboard-hackathon-footer">
+                          <button
+                            className="admin-dashboard-button admin-dashboard-button-small"
+                            onClick={() => handleEditHackathon(hackathon)}
+                          >
+                            <FaEdit /> Edit
+                          </button>
+                          <button
+                            className="admin-dashboard-button admin-dashboard-button-small admin-dashboard-button-danger"
+                            onClick={() => handleDeleteHackathon(hackathon._id)}
+                          >
+                            <FaTrashAlt /> Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="admin-dashboard-empty-state-card">
+                      <FaInfoCircle className="admin-dashboard-empty-icon" />
+                      <p>No hackathons have been created yet.</p>
+                      <p>Click the "Create New Hackathon" button to get started.</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
