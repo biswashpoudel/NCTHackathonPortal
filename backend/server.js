@@ -138,29 +138,40 @@ app.get("/mentors", async (req, res) => {
 
 // Assign Mentor to Groups
 app.post("/assign-mentor", async (req, res) => {
-  const { mentorId, groupIds } = req.body
+  const { mentorId, groupIds, mentorUsername, groupId } = req.body
 
-  if (!mentorId || !groupIds || !groupIds.length) {
-    return res.status(400).json({ message: "Mentor ID and at least one group ID are required" })
+  // Support both formats: either mentorId+groupIds or mentorUsername+groupId
+  if ((!mentorId && !mentorUsername) || (!groupIds && !groupId)) {
+    return res.status(400).json({ message: "Mentor information and group information are required" })
   }
 
   try {
-    // Find the mentor
-    const mentor = await User.findById(mentorId)
+    // Find the mentor - support both ID and username methods
+    let mentor
+    if (mentorId) {
+      mentor = await User.findById(mentorId)
+    } else if (mentorUsername) {
+      mentor = await User.findOne({ username: mentorUsername, role: "mentor" })
+    }
 
     if (!mentor || mentor.role !== "mentor") {
       return res.status(404).json({ message: "Mentor not found" })
     }
 
+    // Handle both single group ID and array of group IDs
+    const groupIdsToUpdate = groupIds || [groupId]
+
     // Update each group with the assigned mentor
-    for (const groupId of groupIds) {
-      await Group.findByIdAndUpdate(groupId, { assignedMentor: mentor.username })
+    for (const gId of groupIdsToUpdate) {
+      await Group.findByIdAndUpdate(gId, { assignedMentor: mentor.username })
     }
 
-    // Create notifications for the mentor
-    const groups = await Group.find({ _id: { $in: groupIds } })
+    // Get the updated groups
+    const groups = await Group.find({ _id: { $in: groupIdsToUpdate } })
 
+    // Create notifications for the mentor and group members
     for (const group of groups) {
+      // Notification for mentor
       const notification = new Notification({
         message: `You have been assigned as a mentor to the group "${group.name}"`,
         type: "info",
@@ -170,10 +181,9 @@ app.post("/assign-mentor", async (req, res) => {
         recipients: [mentor.username],
         readBy: [],
       })
-
       await notification.save()
 
-      // Create notifications for group members
+      // Notification for group members
       const memberNotification = new Notification({
         message: `${mentor.username} has been assigned as your mentor`,
         type: "info",
@@ -183,7 +193,6 @@ app.post("/assign-mentor", async (req, res) => {
         recipients: group.members,
         readBy: [],
       })
-
       await memberNotification.save()
     }
 
