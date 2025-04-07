@@ -2,9 +2,9 @@ const express = require("express")
 const router = express.Router()
 const mongoose = require("mongoose")
 const User = require("./models/User")
-const Group = require("../models/Group")
-const Notification = require("../models/Notification")
-const Submission = require("../models/Submission")
+const Group = require("./models/Group")
+const Notification = require("./models/Notification")
+const Submission = require("./models/Submission")
 
 // Get groups assigned to a mentor
 router.get("/mentor-assigned-groups", async (req, res) => {
